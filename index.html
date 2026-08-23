@@ -2,22 +2,15 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
   <title>미림 랜선 실습실 — LAN Cable Lab</title>
   <link rel="stylesheet" href="css/style.css" />
-  <script type="importmap">
-  {
-    "imports": {
-      "three": "https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js"
-    }
-  }
-  </script>
 </head>
 <body>
   <div id="app">
     <header>
       <h1>미림마이스터고 · 랜선 제작 실습</h1>
-      <span class="sub">작업대에서 만들고, 공구는 걸이에, 테스터로 확인</span>
+      <span class="sub">큰 버튼으로 만들고, 공구는 걸이에</span>
       <div class="chips">
         <span class="chip" id="cat-chip">Cat5e</span>
         <span class="chip" id="len-chip">1m</span>
@@ -26,8 +19,15 @@
       </div>
     </header>
 
+    <main id="stage">
+      <canvas id="view"></canvas>
+    </main>
+
+    <nav id="actions" aria-label="엄지 조작"></nav>
+
     <aside id="coach" aria-live="polite">
       <p class="chip" id="end-badge">끝 A (한쪽)</p>
+      <div id="step-art" class="step-art" aria-hidden="true"></div>
       <h2 id="coach-title">코치</h2>
       <p id="coach-body"></p>
       <p id="coach-hint"></p>
@@ -39,6 +39,9 @@
         <button type="button" class="ghost" id="btn-restart">새 케이블</button>
       </div>
 
+      <div id="cat-chips" class="cat-chips"></div>
+      <div id="tool-tiles" class="tool-tiles"></div>
+
       <div id="panel-len" class="panel hidden">
         <h3>길이</h3>
         <div class="btn-row">
@@ -49,7 +52,7 @@
 
       <div id="panel-strip" class="panel hidden">
         <h3>탈피 깊이</h3>
-        <p>권장 2.0~2.5 cm. 내부 도체를 베지 마세요.</p>
+        <p>권장 2.0~2.5 cm</p>
         <input id="strip-depth" type="range" min="1.0" max="4.0" step="0.1" value="2.2" />
         <p id="strip-val">2.2 cm</p>
         <button type="button" id="strip-go">이 깊이로 벗기기</button>
@@ -72,7 +75,6 @@
         <h3>플러그 방향</h3>
         <p id="tab-state">탭 아래 · 1번 왼쪽 (권장)</p>
         <button type="button" id="btn-tab">탭 방향 뒤집기</button>
-        <p>케이블을 클릭하면 삽입됩니다.</p>
       </div>
 
       <div id="panel-flip" class="panel hidden">
@@ -87,19 +89,15 @@
       </div>
     </aside>
 
-    <main id="stage">
-      <p id="boot-msg">작업실 불러오는 중…</p>
-      <canvas id="view"></canvas>
-    </main>
-
     <aside id="side">
-      <h3>진행 체크</h3>
-      <ul id="check-steps"></ul>
-      <h3>공구 걸이</h3>
-      <ul id="check-tools"></ul>
-      <p style="font-size:1rem;line-height:1.5;color:#f0e0c8;">
-        카메라: 끄어서 회전 · 두 손으로 확대 · R 시점 리셋.
-      </p>
+      <details id="progress-box">
+        <summary>진행 보기</summary>
+        <h3>진행 체크</h3>
+        <ul id="check-steps"></ul>
+        <h3>공구 걸이</h3>
+        <ul id="check-tools"></ul>
+        <p class="cam-note">데스크톱: 끌어서 회전 · 휠 확대. 단축키 M 매뉴얼, D 배선표, R 시점.</p>
+      </details>
     </aside>
   </div>
 
@@ -117,11 +115,12 @@
   <div id="diagram" class="hidden pinned" role="dialog" aria-label="배선표">
     <div class="sheet">
       <h2>작업대 배선표</h2>
-      <p style="font-weight:800;">탭 아래 · 금핀 위 · 왼쪽 1번</p>
+      <p class="sheet-lead">탭 아래 · 금핀 위 · 왼쪽 1번</p>
       <h3>T568B (한국 학교)</h3>
       <div id="diag-b"></div>
       <h3>T568A</h3>
       <div id="diag-a"></div>
+      <div id="diag-vs"></div>
       <div class="btn-row">
         <button type="button" id="btn-pin-diagram">떠 있는 용지 고정됨</button>
         <button type="button" class="ghost" id="btn-close-diagram">접기</button>
@@ -137,13 +136,6 @@
     </div>
   </div>
 
-  <script type="module">
-    import "./js/main.js";
-    const boot = document.getElementById("boot-msg");
-    if (boot) boot.classList.add("hidden");
-  </script>
-  <script nomodule>
-    document.getElementById("boot-msg").textContent = "이 브라우저는 실습실을 열 수 없어요. 크롬이나 사파리 최신을 써 주세요.";
-  </script>
+  <script type="module" src="js/main.js"></script>
 </body>
 </html>
