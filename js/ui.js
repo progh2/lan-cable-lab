@@ -1,9 +1,14 @@
-import { CATS, COACH, WIRE_DEFS, T568A, T568B, LENGTHS, COMMON_MISTAKES } from "./config.js";
+import { CATS, COACH, WIRE_DEFS, T568A, T568B, COMMON_MISTAKES } from "./config.js";
 import { endState } from "./state.js";
 
-export function qs(sel) {
-  return document.querySelector(sel);
+export function qs(sel) { return document.querySelector(sel); }
+
+function toCss(hex) { return "#" + hex.toString(16).padStart(6, "0"); }
+function contrast(hex) {
+  const r = (hex >> 16) & 255, g = (hex >> 8) & 255, b = hex & 255;
+  return r * 0.3 + g * 0.6 + b * 0.1 > 160 ? "#1a120a" : "#fffaf0";
 }
+const HEX = { wo: "#ffe0b2", o: "#e67e22", wg: "#c8e6c9", g: "#2e7d32", b: "#1565c0", wb: "#bbdefb", wbr: "#d7ccc8", br: "#6d4c41" };
 
 export function bindUI(handlers) {
   qs("#btn-start").addEventListener("click", handlers.start);
@@ -12,12 +17,8 @@ export function bindUI(handlers) {
   qs("#btn-close-manual").addEventListener("click", handlers.toggleManual);
   qs("#btn-close-diagram").addEventListener("click", handlers.toggleDiagram);
   qs("#btn-pin-diagram").addEventListener("click", handlers.pinDiagram);
-  document.querySelectorAll("[data-len]").forEach((b) => {
-    b.addEventListener("click", () => handlers.pickLen(b.dataset.len));
-  });
-  document.querySelectorAll("[data-std]").forEach((b) => {
-    b.addEventListener("click", () => handlers.pickStd(b.dataset.std));
-  });
+  document.querySelectorAll("[data-len]").forEach((b) => b.addEventListener("click", () => handlers.pickLen(b.dataset.len)));
+  document.querySelectorAll("[data-std]").forEach((b) => b.addEventListener("click", () => handlers.pickStd(b.dataset.std)));
   qs("#btn-auto-order").addEventListener("click", handlers.autoOrder);
   qs("#btn-shuffle-order").addEventListener("click", handlers.shuffleOrder);
   qs("#btn-next-end").addEventListener("click", handlers.nextEnd);
@@ -26,6 +27,9 @@ export function bindUI(handlers) {
   qs("#btn-tab").addEventListener("click", handlers.toggleTab);
   qs("#strip-go").addEventListener("click", handlers.confirmStrip);
   qs("#btn-celebrate-ok").addEventListener("click", () => qs("#modal-celebrate").classList.add("hidden"));
+  qs("#cat-chips").addEventListener("click", (e) => { const b = e.target.closest("[data-cat]"); if (b) handlers.pickCat(b.dataset.cat); });
+  qs("#tool-tiles").addEventListener("click", (e) => { const b = e.target.closest("[data-tool]"); if (b) handlers.takeTool(b.dataset.tool); });
+  qs("#actions").addEventListener("click", (e) => { const b = e.target.closest("[data-act]"); if (b) handlers.action(b.dataset.act); });
 }
 
 export function renderCoach(state) {
@@ -35,35 +39,60 @@ export function renderCoach(state) {
   qs("#coach-hint").textContent = c.hint;
   qs("#end-badge").textContent = state.currentEnd === "A" ? "끝 A (한쪽)" : "끝 B (반대쪽)";
   qs("#score-val").textContent = String(state.score);
+  renderStepArt(c.art || state.step);
+}
+
+export function renderStepArt(kind) {
+  const el = qs("#step-art");
+  if (!el) return;
+  el.innerHTML = (ART[kind] || ART.welcome)();
+}
+
+export function renderCatChips(state) {
+  const box = qs("#cat-chips");
+  box.classList.toggle("hidden", !["pick_cat", "welcome", "take_reel"].includes(state.step));
+  box.innerHTML = Object.values(CATS).map((c) =>
+    `<button type="button" class="cat-btn ${state.cat === c.id ? "sel" : ""}" data-cat="${c.id}" style="--j:${c.jacketHex}"><span class="cat-swatch"></span>${c.name}<small>${c.speed}</small></button>`
+  ).join("");
+}
+
+export function renderToolTiles(state) {
+  const names = [["stripper", "스트리퍼"], ["cutter", "커터"], ["crimper", "크림퍼"], ["tester", "테스터"]];
+  qs("#tool-tiles").innerHTML = names.map(([id, label]) => {
+    const out = state.toolsOut[id];
+    return `<button type="button" class="tool-tile ${out ? "out" : "hung"}" data-tool="${id}"><strong>${label}</strong><span>${out ? "꺼냄" : "걸림"}</span></button>`;
+  }).join("");
+}
+
+const ACTION_DEFS = [
+  { act: "reel:cat5e", label: "선반 Cat5e", steps: ["welcome", "pick_cat", "take_reel"] },
+  { act: "reel:cat6", label: "선반 Cat6", steps: ["welcome", "pick_cat", "take_reel"] },
+  { act: "reel:cat6a", label: "선반 Cat6a", steps: ["welcome", "pick_cat"] },
+  { act: "reel:cat7", label: "선반 Cat7", steps: ["welcome", "pick_cat"] },
+  { act: "tool:cutter", label: "커터", steps: ["cut", "take_cutter"] },
+  { act: "tool:stripper", label: "스트리퍼", steps: ["take_stripper"] },
+  { act: "tool:crimper", label: "크림퍼", steps: ["take_crimper"] },
+  { act: "tool:tester", label: "테스터", steps: ["done_both", "take_tester"] },
+  { act: "plug", label: "플러그", steps: ["take_plug"] },
+  { act: "cable", label: "케이블 작업", steps: ["cut", "strip", "untwist", "trim", "insert", "crimp"] },
+  { act: "test", label: "테스트 시작", steps: ["test"] },
+  { act: "hang", label: "반납", steps: ["return_stripper", "return_cutter", "return_crimper", "return_tester", "cut"] },
+];
+
+export function renderActions(state) {
+  const bar = qs("#actions");
+  const step = state.step;
+  bar.innerHTML = ACTION_DEFS.filter((d) => d.steps.includes(step) || (d.act === `reel:${state.cat}` && step === "take_reel"))
+    .map((d) => `<button type="button" class="act-btn hi" data-act="${d.act}">${d.label}</button>`).join("");
+  if (!bar.innerHTML) bar.innerHTML = `<button type="button" class="act-btn ghost" data-act="hang">반납</button>`;
 }
 
 export function renderChecklist(state) {
   const e = endState(state);
-  const items = [
-    ["카테고리", !!state.cat],
-    ["길이", !!state.length && state.step !== "welcome"],
-    ["재단", state.cableOnBench],
-    ["탈피", e.stripped],
-    ["페어 정리", e.untwisted],
-    ["배열", e.orderLocked || e.trimmed],
-    ["트림", e.trimmed],
-    ["삽입", e.inserted],
-    ["압착 A", state.ends.A.crimped],
-    ["압착 B", state.ends.B.crimped],
-    ["테스트", !!state.testResult],
-  ];
-  const tools = [
-    ["스트리퍼", !state.toolsOut.stripper],
-    ["커터", !state.toolsOut.cutter],
-    ["크림퍼", !state.toolsOut.crimper],
-    ["테스터", !state.toolsOut.tester],
-  ];
-  qs("#check-steps").innerHTML = items
-    .map(([n, ok]) => `<li class="${ok ? "ok" : ""}">${ok ? "✓" : "○"} ${n}</li>`)
-    .join("");
-  qs("#check-tools").innerHTML = tools
-    .map(([n, ok]) => `<li class="${ok ? "ok" : "warn"}">${ok ? "걸림" : "꺼냄"} · ${n}</li>`)
-    .join("");
+  const items = [["카테고리", !!state.cat], ["길이", !!state.length && state.step !== "welcome"], ["재단", state.cableOnBench], ["탈피", e.stripped], ["페어 정리", e.untwisted], ["배열", e.orderLocked || e.trimmed], ["트림", e.trimmed], ["삽입", e.inserted], ["압착 A", state.ends.A.crimped], ["압착 B", state.ends.B.crimped], ["테스트", !!state.testResult]];
+  const tools = [["스트리퍼", !state.toolsOut.stripper], ["커터", !state.toolsOut.cutter], ["크림퍼", !state.toolsOut.crimper], ["테스터", !state.toolsOut.tester]];
+  qs("#check-steps").innerHTML = items.map(([n, ok]) => `<li class="${ok ? "ok" : ""}">${ok ? "✓" : "○"} ${n}</li>`).join("");
+  qs("#check-tools").innerHTML = tools.map(([n, ok]) => `<li class="${ok ? "ok" : "warn"}">${ok ? "걸림" : "꺼냄"} · ${n}</li>`).join("");
 }
 
 export function renderWires(state) {
@@ -73,12 +102,9 @@ export function renderWires(state) {
   e.order.forEach((id, i) => {
     const d = WIRE_DEFS[id];
     const b = document.createElement("button");
-    b.type = "button";
-    b.className = "wire-chip";
-    b.style.background = toCss(d.hex);
-    b.style.color = contrast(d.hex);
-    b.textContent = `${i + 1} ${d.name}`;
-    b.dataset.i = String(i);
+    b.type = "button"; b.className = "wire-chip";
+    b.style.background = toCss(d.hex); b.style.color = contrast(d.hex);
+    b.textContent = `${i + 1} ${d.name}`; b.dataset.i = String(i);
     box.appendChild(b);
   });
 }
@@ -96,122 +122,81 @@ export function setPanels(state) {
 
 export function showHoverTip(text, x, y) {
   const el = qs("#hover-tip");
-  if (!text) {
-    el.classList.add("hidden");
-    return;
-  }
-  el.textContent = text;
-  el.style.left = `${x + 14}px`;
-  el.style.top = `${y + 14}px`;
-  el.classList.remove("hidden");
+  if (!text) { el.classList.add("hidden"); return; }
+  el.textContent = text; el.style.left = `${x + 14}px`; el.style.top = `${y + 14}px`; el.classList.remove("hidden");
 }
 
 export function renderResult(result) {
   const el = qs("#result-box");
-  if (!result) {
-    el.innerHTML = "";
-    return;
-  }
-  const kind =
-    result.kind === "straight"
-      ? "스트레이트 통과"
-      : result.kind === "crossover"
-        ? "크로스오버 (학습 통과)"
-        : "불합격";
+  if (!result) { el.innerHTML = ""; return; }
+  const kind = result.kind === "straight" ? "스트레이트 통과" : result.kind === "crossover" ? "크로스오버 (학습 통과)" : "불합격";
   el.innerHTML = `<strong>${kind}</strong><ul>${result.reasons.map((r) => `<li>${r}</li>`).join("")}</ul>`;
 }
 
 export function showCelebrate(result, score, toolsOut) {
   const m = qs("#modal-celebrate");
-  const title = qs("#cele-title");
-  const body = qs("#cele-body");
-  if (result && result.pass) {
-    title.textContent = result.kind === "crossover" ? "크로스오버 완성!" : "합격! 연결 성공";
-    body.textContent = `점수 ${score}점. ${toolsOut ? "공구가 아직 나와 있으면 걸이에 돌려 주세요." : "공구도 모두 제자리입니다."}`;
-  } else {
-    title.textContent = "다시 한 번!";
-    body.textContent = (result && result.reasons[0]) || "테스터가 실패를 표시했습니다.";
-  }
+  qs("#cele-title").textContent = result && result.pass ? (result.kind === "crossover" ? "크로스오버 완성!" : "합격! 연결 성공") : "다시 한 번!";
+  qs("#cele-body").textContent = result && result.pass ? `점수 ${score}점. ${toolsOut ? "공구가 아직 나와 있으면 걸이에 돌려 주세요." : "공구도 모두 제자리입니다."}` : ((result && result.reasons[0]) || "테스터가 실패를 표시했습니다.");
   m.classList.remove("hidden");
 }
 
+function plugPins(order, title) {
+  const pins = order.map((id, i) => {
+    const y = 28 + i * 18;
+    return `<rect x="118" y="${y}" width="92" height="14" rx="3" fill="${HEX[id]}" stroke="#1a1208"/><text x="108" y="${y + 12}" text-anchor="end" font-size="11" font-weight="800">${i + 1}</text><text x="216" y="${y + 12}" font-size="10" font-weight="700">${WIRE_DEFS[id].name}</text>`;
+  }).join("");
+  return `<svg viewBox="0 0 280 190" class="art-svg" role="img" aria-label="${title}"><rect x="4" y="8" width="88" height="174" rx="10" fill="#d8c4a0" stroke="#3d2614" stroke-width="3"/><path d="M28 182 h40 l8 10 h-56 z" fill="#8a6a3a"/><text x="48" y="24" text-anchor="middle" font-size="11" font-weight="800">탭 아래</text>${pins}<text x="140" y="16" font-size="13" font-weight="800">${title}</text></svg>`;
+}
+function twoPlugs(cross) {
+  const a = T568B.map((id, i) => {
+    const y = 20 + i * 14;
+    const dest = cross ? 20 + ((i === 0 ? 2 : i === 1 ? 5 : i === 2 ? 0 : i === 5 ? 1 : i) * 14) : y;
+    return `<line x1="70" y1="${y}" x2="170" y2="${dest}" stroke="${HEX[id]}" stroke-width="4"/>`;
+  }).join("");
+  return `<svg viewBox="0 0 240 140" class="art-svg" role="img" aria-label="${cross ? "크로스오버" : "스트레이트"}"><rect x="8" y="8" width="52" height="124" rx="8" fill="#cfc3a6" stroke="#3d2614" stroke-width="2"/><rect x="180" y="8" width="52" height="124" rx="8" fill="#cfc3a6" stroke="#3d2614" stroke-width="2"/>${a}<text x="120" y="138" text-anchor="middle" font-size="12" font-weight="800">${cross ? "A ↔ B 교차" : "1:1 같은 색"}</text></svg>`;
+}
+const icon = (label, inner) => `<svg viewBox="0 0 160 110" class="art-svg" aria-hidden="true">${inner}<text x="80" y="104" text-anchor="middle" font-size="12" font-weight="800">${label}</text></svg>`;
+const iconReel = () => icon("케이블 릴", `<circle cx="70" cy="55" r="38" fill="#2f6b3a" stroke="#1a1208" stroke-width="3"/><circle cx="70" cy="55" r="12" fill="#efe4cf"/>`);
+const iconCutter = () => icon("커터", `<path d="M20 80 L70 40 L80 50 L30 90 Z" fill="#888"/><path d="M90 30 L140 20 L145 32 L95 44 Z" fill="#c45c26"/>`);
+const iconStripper = () => icon("스트리퍼", `<rect x="30" y="40" width="100" height="28" rx="8" fill="#3d5a80"/><rect x="70" y="48" width="40" height="12" fill="#1a1208"/>`);
+const iconUntwist = () => icon("페어 풀기", `<path d="M20 70 q20 -30 40 0 t40 0 t40 0" fill="none" stroke="#e67e22" stroke-width="4"/><path d="M20 78 q20 -30 40 0 t40 0 t40 0" fill="none" stroke="#2e7d32" stroke-width="4"/>`);
+const iconTrim = () => icon("끝 맞추기", Object.values(HEX).map((c,i)=>`<rect x="${20+i*16}" y="30" width="12" height="40" fill="${c}"/>`).join("") + `<line x1="16" y1="28" x2="148" y2="28" stroke="#c45c26" stroke-width="3"/>`);
+const iconInsert = () => icon("탭 아래 · 삽입", `<rect x="90" y="20" width="50" height="55" rx="8" fill="#d8c4a0" stroke="#3d2614" stroke-width="3"/><rect x="20" y="40" width="70" height="18" rx="6" fill="#2f6b3a"/>`);
+const iconCrimp = () => icon("크림퍼", `<path d="M30 90 L70 40 L90 48 L50 98 Z" fill="#555"/><rect x="68" y="44" width="24" height="14" fill="#d8c4a0"/>`);
+const iconTester = () => icon("테스터 LED", `<rect x="16" y="24" width="128" height="48" rx="8" fill="#1f2a22" stroke="#5dcc88"/>` + [0,1,2,3,4,5,6,7].map(i=>`<circle cx="${30+i*14}" cy="48" r="5" fill="${i%2?"#5dcc88":"#ffe08a"}"/>`).join(""));
+const iconHang = () => icon("걸이에 반납", `<rect x="20" y="24" width="120" height="12" rx="4" fill="#6b4423"/><rect x="40" y="36" width="16" height="40" fill="#3d5a80"/><rect x="72" y="36" width="16" height="40" fill="#888"/><rect x="104" y="36" width="16" height="40" fill="#555"/>`);
+
+const ART = {
+  welcome: () => `<div class="art-row">${iconReel()}${iconCutter()}</div>`,
+  reel: iconReel, cutter: iconCutter, stripper: iconStripper, hang: iconHang,
+  untwist: iconUntwist, arrange: () => plugPins(T568B, "T568B"), trim: iconTrim,
+  insert: iconInsert, crimp: iconCrimp, tester: iconTester,
+  crossover: () => twoPlugs(true), complete: () => `<div class="art-row">${iconTester()}${twoPlugs(false)}</div>`,
+};
+
 export function buildManual() {
-  const root = qs("#manual-pages");
-  root.innerHTML = `
-    <article>
-      <h3>UTP가 뭔가요?</h3>
-      <p>UTP(Unshielded Twisted Pair)는 차폐 없이 <b>꼬인 네 쌍</b>의 전선입니다. 꼬임이 전자기 간섭(누화, NEXT)을 줄입니다. 랜선 한 가닥 안에는 주황·녹·파랑·갈색 페어가 들어 있습니다. 각 페어는 “색 + 흰색 줄무늬” 두 가닥입니다.</p>
-    </article>
-    <article>
-      <h3>카테고리</h3>
-      <ul>
-        ${Object.values(CATS)
-          .map((c) => `<li><b>${c.name}</b> — ${c.speed}. ${c.use}${c.hasSeparator ? " (십자 분리대)" : ""}</li>`)
-          .join("")}
-      </ul>
-      <p>숫자가 클수록 주파수와 허용 속도가 올라가고, 재킷·분리대·차폐가 엄격해집니다.</p>
-    </article>
-    <article>
-      <h3>핀 번호와 플러그 방향</h3>
-      <p>RJ45를 <b>클립(탭)이 아래</b>, 금핀이 위로 보이게 들었습니다. 앞에서 보면 <b>왼쪽이 1번, 오른쪽이 8번</b>입니다. 이 약속이 바뀌면 모든 색이 거울처럼 뒤집힙니다.</p>
-    </article>
-    <article>
-      <h3>T568B (한국 학교에서 흔함)</h3>
-      <ol class="pin-ol">
-        ${T568B.map((id, i) => `<li style="--c:${toCss(WIRE_DEFS[id].hex)}">${i + 1}. ${WIRE_DEFS[id].name}</li>`).join("")}
-      </ol>
-      <h3>T568A</h3>
-      <ol class="pin-ol">
-        ${T568A.map((id, i) => `<li style="--c:${toCss(WIRE_DEFS[id].hex)}">${i + 1}. ${WIRE_DEFS[id].name}</li>`).join("")}
-      </ol>
-      <p>A와 B의 차이는 <b>주황 페어와 녹 페어의 자리</b>뿐입니다. 파랑·갈색은 같습니다.</p>
-    </article>
-    <article>
-      <h3>스트레이트 vs 크로스오버</h3>
-      <p><b>스트레이트</b>: 양 끝을 같은 표준(보통 B+B)으로 만듭니다. PC↔스위치가 기본입니다.</p>
-      <p><b>크로스오버</b>: 한쪽 T568A, 다른 쪽 T568B. 같은 종류 장비끼리 직접 이을 때 쓰였습니다. 요즘 NIC는 Auto MDI-X라 스트레이트만으로도 됩니다. 실습에서는 패턴을 읽기 위해 만들어 봅니다.</p>
-    </article>
-    <article>
-      <h3>자주 하는 실수</h3>
-      <ul>${COMMON_MISTAKES.map((m) => `<li>${m}</li>`).join("")}</ul>
-      <p>테스터 LED가 순서대로 1→8이면 스트레이트 정상, 1↔3·2↔6이 바뀌면 전형적인 크로스, 일부만 꺼지면 단선·트림 불량입니다.</p>
-    </article>
-    <article>
-      <h3>공구 예절</h3>
-      <p>스트리퍼·커터·크림퍼·테스터는 <b>쓰고 바로 걸이</b>에 겁니다. 작업대에 두면 칼날 사고와 분실이 납니다. 이 시뮬레이터는 공구를 안 돌리면 감점합니다.</p>
-    </article>
-  `;
+  qs("#manual-pages").innerHTML = `
+    <article class="man-card">${iconReel()}<h3>UTP가 뭔가요?</h3><p>꼬인 네 쌍이 간섭을 줄여 줘요. 각 페어는 색 + 흰줄 두 가닥입니다.</p></article>
+    <article class="man-card"><div class="cat-legend">${Object.values(CATS).map((c) => `<span class="cat-pill" style="background:${c.jacketHex}">${c.name}<small>${c.speed}</small></span>`).join("")}</div><h3>카테고리</h3><p>숫자가 클수록 빠르고 재킷이 굵어요. 교실은 Cat5e부터.</p></article>
+    <article class="man-card">${iconInsert()}<h3>핀 번호와 플러그 방향</h3><p>탭을 <b>아래</b>로. 앞에서 보면 <b>왼쪽 1번 · 오른쪽 8번</b>.</p></article>
+    <article class="man-card wide"><div class="std-pair">${plugPins(T568B, "T568B")}${plugPins(T568A, "T568A")}</div><h3>T568B / T568A</h3><p>차이는 주황·녹 페어 자리뿐. 학교는 보통 B.</p></article>
+    <article class="man-card wide"><div class="std-pair">${twoPlugs(false)}${twoPlugs(true)}</div><h3>스트레이트 vs 크로스오버</h3><p>같은 표준은 스트레이트. A+B는 크로스. 요즘은 Auto MDI-X라 스트레이트가 기본.</p></article>
+    <article class="man-card wide"><h3>자주 하는 실수</h3><div class="mistake-grid">${COMMON_MISTAKES.map((m) => `<div class="mistake-card"><strong>${m.title}</strong><p>${m.text}</p></div>`).join("")}</div></article>
+    <article class="man-card">${iconHang()}<h3>공구 예절</h3><p>쓰고 바로 걸이. 안 돌리면 감점돼요.</p></article>`;
 }
 
 export function buildDiagramSheet() {
-  const a = qs("#diag-a");
-  const b = qs("#diag-b");
-  a.innerHTML = T568A.map((id, i) => row(i, id)).join("");
-  b.innerHTML = T568B.map((id, i) => row(i, id)).join("");
-}
-
-function row(i, id) {
-  const d = WIRE_DEFS[id];
-  return `<div class="diag-row"><span class="pin">${i + 1}</span><span class="sw" style="background:${toCss(d.hex)}"></span><span>${d.name}</span></div>`;
-}
-
-function toCss(hex) {
-  return "#" + hex.toString(16).padStart(6, "0");
-}
-
-function contrast(hex) {
-  const r = (hex >> 16) & 255;
-  const g = (hex >> 8) & 255;
-  const b = hex & 255;
-  return r * 0.3 + g * 0.6 + b * 0.1 > 160 ? "#1a120a" : "#fffaf0";
+  qs("#diag-b").innerHTML = plugPins(T568B, "T568B");
+  qs("#diag-a").innerHTML = plugPins(T568A, "T568A");
+  const extra = qs("#diag-vs");
+  if (extra) extra.innerHTML = `<div class="std-pair">${twoPlugs(false)}${twoPlugs(true)}</div>`;
 }
 
 export function toast(msg) {
   const t = qs("#toast");
-  t.textContent = msg;
-  t.classList.remove("hidden");
+  t.textContent = msg; t.classList.remove("hidden");
   clearTimeout(toast._tm);
   toast._tm = setTimeout(() => t.classList.add("hidden"), 2800);
 }
 
-export { CATS, LENGTHS };
+export { CATS, LENGTHS } from "./config.js";
