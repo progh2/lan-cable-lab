@@ -2,9 +2,16 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>미림 랜선 실습실 — LAN Cable Lab</title>
   <link rel="stylesheet" href="css/style.css" />
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js"
+    }
+  }
+  </script>
 </head>
 <body>
   <div id="app">
@@ -81,6 +88,7 @@
     </aside>
 
     <main id="stage">
+      <p id="boot-msg">작업실 불러오는 중…</p>
       <canvas id="view"></canvas>
     </main>
 
@@ -90,8 +98,7 @@
       <h3>공구 걸이</h3>
       <ul id="check-tools"></ul>
       <p style="font-size:1rem;line-height:1.5;color:#f0e0c8;">
-        카메라: 끄어서 회전 · 휠 확대 · 범위가 제한되어 길을 잃지 않습니다.
-        단축키 M 매뉴얼, D 배선표, R 시점 리셋.
+        카메라: 끄어서 회전 · 두 손으로 확대 · R 시점 리셋.
       </p>
     </aside>
   </div>
@@ -130,6 +137,13 @@
     </div>
   </div>
 
-  <script type="module" src="js/main.js"></script>
+  <script type="module">
+    import "./js/main.js";
+    const boot = document.getElementById("boot-msg");
+    if (boot) boot.classList.add("hidden");
+  </script>
+  <script nomodule>
+    document.getElementById("boot-msg").textContent = "이 브라우저는 실습실을 열 수 없어요. 크롬이나 사파리 최신을 써 주세요.";
+  </script>
 </body>
 </html>
