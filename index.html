@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>미림 랜선 실습실 — LAN Cable Lab</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div id="app">
+    <header>
+      <h1>미림마이스터고 · 랜선 제작 실습</h1>
+      <span class="sub">작업대에서 만들고, 공구는 걸이에, 테스터로 확인</span>
+      <div class="chips">
+        <span class="chip" id="cat-chip">Cat5e</span>
+        <span class="chip" id="len-chip">1m</span>
+        <span class="chip" id="std-chip">끝A T568B</span>
+        <span class="chip score">점수 <span id="score-val">100</span></span>
+      </div>
+    </header>
+
+    <aside id="coach" aria-live="polite">
+      <p class="chip" id="end-badge">끝 A (한쪽)</p>
+      <h2 id="coach-title">코치</h2>
+      <p id="coach-body"></p>
+      <p id="coach-hint"></p>
+      <div class="btn-row">
+        <button type="button" id="btn-start">시작하기</button>
+        <button type="button" class="secondary" id="btn-manual">실습 매뉴얼</button>
+        <button type="button" class="ghost" id="btn-diagram">배선표</button>
+        <button type="button" class="ghost" id="btn-retry">이 단계 다시</button>
+        <button type="button" class="ghost" id="btn-restart">새 케이블</button>
+      </div>
+
+      <div id="panel-len" class="panel hidden">
+        <h3>길이</h3>
+        <div class="btn-row">
+          <button type="button" data-len="1m">1 m</button>
+          <button type="button" data-len="2m">2 m</button>
+        </div>
+      </div>
+
+      <div id="panel-strip" class="panel hidden">
+        <h3>탈피 깊이</h3>
+        <p>권장 2.0~2.5 cm. 내부 도체를 베지 마세요.</p>
+        <input id="strip-depth" type="range" min="1.0" max="4.0" step="0.1" value="2.2" />
+        <p id="strip-val">2.2 cm</p>
+        <button type="button" id="strip-go">이 깊이로 벗기기</button>
+      </div>
+
+      <div id="panel-arrange" class="panel hidden">
+        <h3>8가닥 배열</h3>
+        <div class="btn-row">
+          <button type="button" data-std="B">T568B (학교 기본)</button>
+          <button type="button" data-std="A">T568A</button>
+        </div>
+        <div id="wire-row"></div>
+        <div class="btn-row">
+          <button type="button" id="btn-auto-order">규격대로 정렬</button>
+          <button type="button" class="ghost" id="btn-shuffle-order">일부러 섞기</button>
+        </div>
+      </div>
+
+      <div id="panel-insert" class="panel hidden">
+        <h3>플러그 방향</h3>
+        <p id="tab-state">탭 아래 · 1번 왼쪽 (권장)</p>
+        <button type="button" id="btn-tab">탭 방향 뒤집기</button>
+        <p>케이블을 클릭하면 삽입됩니다.</p>
+      </div>
+
+      <div id="panel-flip" class="panel hidden">
+        <h3>반대쪽 끝</h3>
+        <p>같은 표준 = 스트레이트. 다른 표준 = 크로스오버.</p>
+        <button type="button" id="btn-next-end">반대쪽 작업 시작</button>
+      </div>
+
+      <div id="panel-result" class="panel hidden">
+        <h3>테스터 결과</h3>
+        <div id="result-box"></div>
+      </div>
+    </aside>
+
+    <main id="stage">
+      <canvas id="view"></canvas>
+    </main>
+
+    <aside id="side">
+      <h3>진행 체크</h3>
+      <ul id="check-steps"></ul>
+      <h3>공구 걸이</h3>
+      <ul id="check-tools"></ul>
+      <p style="font-size:1rem;line-height:1.5;color:#f0e0c8;">
+        카메라: 끄어서 회전 · 휠 확대 · 범위가 제한되어 길을 잃지 않습니다.
+        단축키 M 매뉴얼, D 배선표, R 시점 리셋.
+      </p>
+    </aside>
+  </div>
+
+  <div id="hover-tip" class="hidden"></div>
+  <div id="toast" class="hidden"></div>
+
+  <div id="manual" class="hidden" role="dialog" aria-label="실습 매뉴얼">
+    <div class="book">
+      <h2>랜선 실습 바인더</h2>
+      <div id="manual-pages"></div>
+      <button type="button" id="btn-close-manual">닫기</button>
+    </div>
+  </div>
+
+  <div id="diagram" class="hidden pinned" role="dialog" aria-label="배선표">
+    <div class="sheet">
+      <h2>작업대 배선표</h2>
+      <p style="font-weight:800;">탭 아래 · 금핀 위 · 왼쪽 1번</p>
+      <h3>T568B (한국 학교)</h3>
+      <div id="diag-b"></div>
+      <h3>T568A</h3>
+      <div id="diag-a"></div>
+      <div class="btn-row">
+        <button type="button" id="btn-pin-diagram">떠 있는 용지 고정됨</button>
+        <button type="button" class="ghost" id="btn-close-diagram">접기</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-celebrate" class="hidden">
+    <div class="modal-card">
+      <h2 id="cele-title">결과</h2>
+      <p id="cele-body"></p>
+      <button type="button" id="btn-celebrate-ok">확인</button>
+    </div>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
