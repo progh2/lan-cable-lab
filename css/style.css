@@ -472,7 +472,13 @@ button.ok { background: #2d4a2d; }
   z-index: 2;
 }
 .measure-track .cable-tip {
-  top: 36px;
+  top: 40px;
+  z-index: 3;
+}
+.measure-track .cable-cut-face,
+.measure-track .cable-scrap {
+  position: absolute;
+  pointer-events: none;
   z-index: 3;
 }
 .measure-track .jacket-peel {
@@ -525,16 +531,65 @@ button.ok { background: #2d4a2d; }
   border-radius: 4px;
   min-width: 24px;
 }
+.cable-body.severed {
+  border-radius: 4px 0 0 4px;
+  border-right-color: #1a1b14;
+}
 .cable-tip, .tool, .jacket-peel, .bundle, .boot {
   position: absolute;
   touch-action: none;
 }
 .cable-tip {
-  width: 36px;
-  height: 40px;
-  background: var(--copper);
+  width: 16px;
+  height: 26px;
+  background: #3f5a3c;
   border: 2px solid #1a1b14;
-  top: 34px;
+  border-left: 0;
+  border-radius: 0 8px 8px 0;
+  top: 40px;
+}
+.cable-tip.faded { opacity: 0.4; }
+.cable-cut-face {
+  top: 42px;
+  width: 8px;
+  height: 22px;
+  background: linear-gradient(90deg, #3f5a3c 42%, #c48a3a 42%);
+  border: 2px solid #1a1b14;
+  border-radius: 0;
+}
+.cable-scrap {
+  top: 42px;
+  height: 22px;
+  background: #3f5a3c;
+  border: 2px solid #1a1b14;
+  border-radius: 0 4px 4px 0;
+  opacity: 0.38;
+}
+.cutter.tool {
+  width: 148px;
+  overflow: visible;
+  align-items: flex-start;
+}
+.cutter .tool-svg {
+  width: 140px;
+  height: 92px;
+  overflow: visible;
+  filter: none;
+}
+.cutter .tool-label {
+  align-self: center;
+  width: 100%;
+  text-align: center;
+}
+.cut-hair {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  border-left: 2px dashed #f0d48a;
+  z-index: 4;
+  pointer-events: none;
+  transform: translateX(-1px);
 }
 .tool {
   width: 92px;

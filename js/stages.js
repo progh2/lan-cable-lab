@@ -24,19 +24,25 @@ function clampTool(node, x, y, box) {
   ];
 }
 
-/** Flat 2D silhouettes — diagonal cutter, jacket stripper, RJ45 crimp tool. */
+/** Flat 2D silhouettes — flush nipper, jacket stripper, RJ45 crimp tool. */
 const TOOL_SVG = {
   cutter: `
-    <svg class="tool-svg" viewBox="0 0 120 88" aria-hidden="true">
-      <path d="M58 42 L100 76 Q104 81 97 83 L52 50 Z" fill="#2c2c28" stroke="#1a1b14" stroke-width="2"/>
-      <path d="M66 52 L94 74" stroke="#5a5a52" stroke-width="3" stroke-linecap="round" opacity=".4"/>
-      <path d="M50 44 L24 82 Q20 87 27 86 L58 50 Z" fill="#9c1f1f" stroke="#1a1b14" stroke-width="2"/>
-      <path d="M46 56 L30 80" stroke="#d46a5a" stroke-width="2.6" stroke-linecap="round" opacity=".45"/>
-      <path d="M52 42 L12 20 L6 27 L20 34 L50 48 Z" fill="#8b9298" stroke="#1a1b14" stroke-width="2"/>
-      <path d="M56 36 L20 8 L10 16 L48 42 Z" fill="#c5ccd2" stroke="#1a1b14" stroke-width="2"/>
-      <path d="M18 14 L50 40" stroke="#eef1f3" stroke-width="1.3"/>
-      <circle cx="54" cy="44" r="7.2" fill="#c9b888" stroke="#1a1b14" stroke-width="2"/>
-      <circle cx="54" cy="44" r="2.8" fill="#6e7064"/>
+    <svg class="tool-svg" viewBox="0 0 170 110" overflow="visible" aria-hidden="true">
+      <line class="cut-guide" x1="6" y1="-48" x2="6" y2="154" stroke="#f0d48a" stroke-width="2.2" stroke-dasharray="5 4"/>
+      <g>
+        <path d="M70 58 C96 70 124 84 150 96 C157 99 164 95 163 87 C162 79 155 76 148 74 C122 64 96 54 72 52 Z" fill="#2c2c28" stroke="#1a1b14" stroke-width="2.2" stroke-linejoin="round"/>
+        <path d="M88 72 L146 90" stroke="#5a5a52" stroke-width="2.6" stroke-linecap="round" opacity=".4"/>
+        <path d="M70 52 C96 40 124 26 150 14 C157 11 164 15 163 23 C162 31 155 34 148 36 C122 46 96 56 72 58 Z" fill="#9c1f1f" stroke="#1a1b14" stroke-width="2.2" stroke-linejoin="round"/>
+        <path d="M88 38 L146 20" stroke="#d46a5a" stroke-width="2.6" stroke-linecap="round" opacity=".45"/>
+        <path d="M82 50 C92 55 92 55 82 60" stroke="#8c8e80" stroke-width="2.2" fill="none"/>
+        <path d="M48 42 L74 47 L74 63 L48 68 Z" fill="#7d868e" stroke="#1a1b14" stroke-width="2.2"/>
+        <path d="M10 82 L10 56 L50 55 L60 74 L36 90 Z" fill="#8b9298" stroke="#1a1b14" stroke-width="2.2" stroke-linejoin="round"/>
+        <path d="M10 28 L10 54 L50 55 L60 36 L36 20 Z" fill="#c5ccd2" stroke="#1a1b14" stroke-width="2.2" stroke-linejoin="round"/>
+        <path d="M10 28 L10 82" stroke="#efe6cf" stroke-width="2.8" stroke-linecap="butt"/>
+        <path d="M12 55 L50 55" stroke="#2a2b22" stroke-width="1.8"/>
+        <circle cx="64" cy="55" r="9" fill="#c9b888" stroke="#1a1b14" stroke-width="2.2"/>
+        <circle cx="64" cy="55" r="3.4" fill="#6e7064"/>
+      </g>
     </svg>`,
   stripper: `
     <svg class="tool-svg" viewBox="0 0 120 88" aria-hidden="true">
@@ -188,10 +194,13 @@ function cut(root, api, add) {
       <div class="measure-track" id="track">
         <div class="ok-band" style="left:${lo}%;width:${hi - lo}%"></div>
         <div class="ruler" id="ruler"></div>
+        <i class="cut-hair hidden" id="hair" aria-hidden="true"></i>
         <div class="cable-body" id="body"></div>
+        <div class="cable-cut-face hidden" id="face" aria-hidden="true"></div>
+        <div class="cable-scrap hidden" id="scrap" aria-hidden="true"></div>
         <div class="cable-tip" id="tip"></div>
       </div>
-      ${toolMarkup("cutter", "커터")}
+      ${toolMarkup("cutter", "니퍼")}
     </div>
   `);
   root.appendChild(box);
@@ -199,8 +208,12 @@ function cut(root, api, add) {
   const track = qs("#track", box);
   const ruler = qs("#ruler", box);
   const body = qs("#body", box);
+  const hair = qs("#hair", box);
+  const face = qs("#face", box);
+  const scrap = qs("#scrap", box);
   const tip = qs("#tip", box);
   const cutter = qs("#cutter", box);
+  const guide = qs(".cut-guide", cutter);
   const read = qs("#read", box);
   ticks(ruler, [
     [0, "0", true],
@@ -220,31 +233,66 @@ function cut(root, api, add) {
     const r = track.getBoundingClientRect();
     return snapM(((clientX - r.left) / r.width) * 1.5);
   }
+  function guideClientX() {
+    const g = guide.getBoundingClientRect();
+    return g.left + g.width / 2;
+  }
   function paint() {
     const w = Math.max(track.clientWidth, 1);
-    const tipX = (unspool / 1.5) * w - 8;
-    body.style.width = `${Math.max(24, (unspool / 1.5) * w)}px`;
-    tip.style.left = `${Math.max(0, tipX)}px`;
-    if (cutAt == null) {
-      read.textContent = `푼 길이 ${unspool.toFixed(2)} m · 커터를 1.0m 띠 위에`;
+    const unspoolPx = (unspool / 1.5) * w;
+    const guideM = clientToM(guideClientX());
+    const markM = cutAt != null ? cutAt : guideM;
+    const t = track.getBoundingClientRect();
+    const c = cutter.getBoundingClientRect();
+    const cy = c.top + c.height / 2;
+    const gx = guideClientX();
+    const overTrack = gx >= t.left - 10 && gx <= t.right + 10 && cy >= t.top - 36 && cy <= t.bottom + 56;
+    if (overTrack) {
+      hair.classList.remove("hidden");
+      hair.style.left = `${(markM / 1.5) * w}px`;
     } else {
-      read.textContent = `절단 ${cutAt.toFixed(2)} m  (푼 길이 ${unspool.toFixed(2)} m)`;
+      hair.classList.add("hidden");
+    }
+    if (cutAt != null) {
+      const cutPx = (cutAt / 1.5) * w;
+      body.style.width = `${Math.max(12, cutPx)}px`;
+      body.classList.add("severed");
+      face.classList.remove("hidden");
+      face.style.left = `${Math.max(0, cutPx - 3)}px`;
+      const scrapW = Math.max(0, unspoolPx - cutPx - 12);
+      if (scrapW > 10) {
+        scrap.classList.remove("hidden");
+        scrap.style.left = `${cutPx + 10}px`;
+        scrap.style.width = `${scrapW}px`;
+      } else {
+        scrap.classList.add("hidden");
+      }
+      tip.classList.add("hidden");
+      read.textContent = `절단 기준 ${cutAt.toFixed(2)} m · 푼 길이 ${unspool.toFixed(2)} m`;
+    } else {
+      body.style.width = `${Math.max(24, unspoolPx)}px`;
+      body.classList.remove("severed");
+      face.classList.add("hidden");
+      scrap.classList.add("hidden");
+      tip.classList.remove("hidden");
+      tip.style.left = `${Math.max(0, unspoolPx - 12)}px`;
+      read.textContent = `푼 길이 ${unspool.toFixed(2)} m · 파선 ${guideM.toFixed(2)} m`;
     }
   }
   function checkCutter() {
+    const gx = guideClientX();
     const c = cutter.getBoundingClientRect();
     const t = track.getBoundingClientRect();
-    const mid = c.left + c.width / 2;
     const cy = c.top + c.height / 2;
-    const onTrack = mid >= t.left - 8 && mid <= t.right + 8 && cy >= t.top - 20 && cy <= t.bottom + 40;
-    const at = clientToM(mid);
+    const onTrack = gx >= t.left - 10 && gx <= t.right + 10 && cy >= t.top - 28 && cy <= t.bottom + 48;
+    const at = clientToM(gx);
     const onCable = onTrack && at <= unspool + 0.03;
     if (onCable) {
       cutAt = at;
       paint();
       if (!offered) {
         offered = true;
-        api.primary("이 길이로 자르기", commit);
+        api.primary("이 파선에서 자르기", commit);
       }
     } else {
       cutAt = null;
@@ -262,10 +310,25 @@ function cut(root, api, add) {
       api.reject(m < JOB.lengthM ? `${m.toFixed(2)}m — 너무 짧습니다. 1.00m ±5cm.` : `${m.toFixed(2)}m — 너무 깁니다. 1.00m ±5cm.`);
     }
   }
+  function snapNipperX(x, y) {
+    [x, y] = clampTool(cutter, x, y, canvas);
+    place(cutter, x, y);
+    const t = track.getBoundingClientRect();
+    const c = cutter.getBoundingClientRect();
+    const cy = c.top + c.height / 2;
+    if (cy < t.top - 28 || cy > t.bottom + 48) return [x, y];
+    const gx = guideClientX();
+    const m = clientToM(gx);
+    const cr = canvas.getBoundingClientRect();
+    const inset = gx - c.left;
+    x = clamp(t.left - cr.left + (m / 1.5) * t.width - inset, 0, Math.max(0, canvas.clientWidth - cutter.offsetWidth));
+    place(cutter, x, y);
+    return [x, y];
+  }
 
   requestAnimationFrame(() => {
+    place(cutter, 10, Math.max(100, canvas.clientHeight - cutter.offsetHeight - 4));
     paint();
-    place(cutter, 12, Math.max(100, canvas.clientHeight - cutter.offsetHeight - 4));
   });
 
   function pullTo(ev) {
@@ -288,7 +351,7 @@ function cut(root, api, add) {
   add(bindDrag(cutter, {
     container: canvas,
     onMove(x, y) {
-      place(cutter, ...clampTool(cutter, x, y, canvas));
+      snapNipperX(x, y);
       checkCutter();
     },
     onEnd: checkCutter,
