@@ -93,17 +93,15 @@ export function setPrompt(text) {
 
 export function setPrimary(label, onClick) {
   const btn = qs("#btn-primary");
-  btn.replaceWith(btn.cloneNode(true));
-  const next = qs("#btn-primary");
   if (!label) {
-    next.classList.add("hidden");
-    next.textContent = "";
-    next.onclick = null;
+    btn.classList.add("hidden");
+    btn.textContent = "";
+    btn.onclick = null;
     return;
   }
-  next.classList.remove("hidden");
-  next.textContent = label;
-  next.onclick = onClick;
+  btn.classList.remove("hidden");
+  btn.textContent = label;
+  btn.onclick = onClick;
 }
 
 export function toast(msg) {

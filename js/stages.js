@@ -118,91 +118,108 @@ function reel(root, api, add) {
 }
 
 function cut(root, api, add) {
+  const lo = ((JOB.lengthM - JOB.lengthTolM) / 1.5) * 100;
+  const hi = ((JOB.lengthM + JOB.lengthTolM) / 1.5) * 100;
   const box = el(`
     <div class="stage-canvas">
-      <div class="length-read" id="read">0.20 m</div>
-      <div class="ruler" id="ruler"></div>
-      <div class="cut-run" id="run">
+      <div class="length-read" id="read">푼 길이 0.20 m</div>
+      <div class="measure-track" id="track">
+        <div class="ok-band" style="left:${lo}%;width:${hi - lo}%"></div>
+        <div class="ruler" id="ruler"></div>
         <div class="cable-body" id="body"></div>
         <div class="cable-tip" id="tip"></div>
-        <div class="cutter tool" id="cutter">커터</div>
       </div>
+      <div class="cutter tool" id="cutter">커터</div>
     </div>
   `);
   root.appendChild(box);
+  const canvas = box;
+  const track = qs("#track", box);
   const ruler = qs("#ruler", box);
-  const run = qs("#run", box);
   const body = qs("#body", box);
   const tip = qs("#tip", box);
   const cutter = qs("#cutter", box);
   const read = qs("#read", box);
   ticks(ruler, [
     [0, "0", true],
-    [33.3, "50cm", true],
+    [33.3, "0.5m", true],
     [66.7, "1.0m", true],
     [100, "1.5m", true],
   ]);
 
-  let meters = 0.2;
-  let cutterOn = false;
+  let unspool = 0.2;
+  let cutAt = null;
+  let offered = false;
 
-  function trackW() {
-    return Math.max(ruler.clientWidth || run.clientWidth || 1, 1);
+  function snapM(m) {
+    return Math.round(clamp(m, 0.05, 1.5) * 100) / 100;
   }
-  function xToM(x) {
-    return clamp((x / trackW()) * 1.5, 0.05, 1.5);
+  function clientToM(clientX) {
+    const r = track.getBoundingClientRect();
+    return snapM(((clientX - r.left) / r.width) * 1.5);
   }
   function paint() {
-    const w = trackW();
-    const tipX = (meters / 1.5) * w;
-    body.style.left = "8px";
-    body.style.width = `${Math.max(20, tipX - 4)}px`;
-    tip.style.left = `${tipX}px`;
-    read.textContent = `${meters.toFixed(2)} m`;
+    const w = Math.max(track.clientWidth, 1);
+    const tipX = (unspool / 1.5) * w - 8;
+    body.style.width = `${Math.max(24, (unspool / 1.5) * w)}px`;
+    tip.style.left = `${Math.max(0, tipX)}px`;
+    if (cutAt == null) {
+      read.textContent = `푼 길이 ${unspool.toFixed(2)} m · 커터를 1.0m 띠 위에`;
+    } else {
+      read.textContent = `절단 ${cutAt.toFixed(2)} m  (푼 길이 ${unspool.toFixed(2)} m)`;
+    }
   }
   function checkCutter() {
     const c = cutter.getBoundingClientRect();
-    const b = body.getBoundingClientRect();
+    const t = track.getBoundingClientRect();
     const mid = c.left + c.width / 2;
-    const on = mid >= b.left && mid <= b.right + 16 && Math.abs((c.top + c.height / 2) - (b.top + b.height / 2)) < 56;
-    cutterOn = on;
-    if (on) {
-      const local = mid - ruler.getBoundingClientRect().left;
-      meters = xToM(local);
+    const cy = c.top + c.height / 2;
+    const onTrack = mid >= t.left - 8 && mid <= t.right + 8 && cy >= t.top - 20 && cy <= t.bottom + 40;
+    const at = clientToM(mid);
+    const onCable = onTrack && at <= unspool + 0.03;
+    if (onCable) {
+      cutAt = at;
       paint();
-      api.primary("이 길이로 자르기", commit);
+      if (!offered) {
+        offered = true;
+        api.primary("이 길이로 자르기", commit);
+      }
     } else {
+      cutAt = null;
+      offered = false;
+      paint();
       api.primary(null);
     }
   }
   function commit() {
-    if (Math.abs(meters - JOB.lengthM) <= JOB.lengthTolM) {
-      api.state.cutLengthM = meters;
+    const m = cutAt == null ? unspool : cutAt;
+    if (Math.abs(m - JOB.lengthM) <= JOB.lengthTolM) {
+      api.state.cutLengthM = m;
       api.go("strip");
     } else {
-      api.reject(meters < JOB.lengthM ? `${meters.toFixed(2)}m — 너무 짧습니다. 1.00m ±5cm.` : `${meters.toFixed(2)}m — 너무 깁니다. 1.00m ±5cm.`);
+      api.reject(m < JOB.lengthM ? `${m.toFixed(2)}m — 너무 짧습니다. 1.00m ±5cm.` : `${m.toFixed(2)}m — 너무 깁니다. 1.00m ±5cm.`);
     }
   }
 
   requestAnimationFrame(() => {
     paint();
-    place(cutter, 16, run.clientHeight - 80);
+    place(cutter, 12, Math.max(100, canvas.clientHeight - 72));
   });
 
   add(bindDrag(tip, {
-    container: run,
+    container: track,
     axis: "x",
-    onMove(x) {
-      meters = xToM(x);
+    onMove(x, _y, ev) {
+      unspool = clientToM(ev.clientX);
       paint();
       checkCutter();
     },
     onEnd: checkCutter,
   }));
   add(bindDrag(cutter, {
-    container: run,
+    container: canvas,
     onMove(x, y) {
-      place(cutter, clamp(x, 0, run.clientWidth - 76), clamp(y, 0, run.clientHeight - 64));
+      place(cutter, clamp(x, 0, canvas.clientWidth - 76), clamp(y, 0, canvas.clientHeight - 64));
       checkCutter();
     },
     onEnd: checkCutter,
@@ -212,21 +229,24 @@ function cut(root, api, add) {
 function strip(root, api, add) {
   const end = endOf(api.state);
   const which = api.state.currentEnd;
+  const lo = ((5 - (JOB.stripCm + JOB.stripTolCm)) / 5) * 100;
+  const hi = ((5 - (JOB.stripCm - JOB.stripTolCm)) / 5) * 100;
   const box = el(`
     <div class="stage-canvas">
-      <div class="depth-read" id="read">끝 ${which} · 칼날 — cm</div>
-      <div class="cm-ruler" id="ruler"></div>
-      <div class="cut-run" id="run">
+      <div class="depth-read" id="read">끝 ${which} · 칼날 0.2 cm</div>
+      <div class="measure-track" id="track">
+        <div class="ok-band" style="left:${lo}%;width:${Math.max(4, hi - lo)}%"></div>
+        <div class="ruler" id="ruler"></div>
         <div class="strip-cable" id="cable"></div>
-        <div class="jacket-peel" id="jacket"></div>
-        <div class="stripper tool" id="stripper">스트리퍼</div>
       </div>
+      <div class="jacket-peel" id="jacket">재킷 · 잡아 벗기기</div>
+      <div class="stripper tool" id="stripper">스트리퍼</div>
     </div>
   `);
   root.appendChild(box);
+  const canvas = box;
+  const track = qs("#track", box);
   const ruler = qs("#ruler", box);
-  const run = qs("#run", box);
-  const cable = qs("#cable", box);
   const jacket = qs("#jacket", box);
   const stripper = qs("#stripper", box);
   const read = qs("#read", box);
@@ -236,46 +256,47 @@ function strip(root, api, add) {
     [40, "3cm", true],
     [60, "2", false],
     [80, "1", false],
-    [100, "0 끝", true],
+    [100, "끝 0", true],
   ]);
 
   let depth = 0.2;
 
-  function cableBox() {
-    return cable.getBoundingClientRect();
+  function snapCm(cm) {
+    return Math.round(clamp(cm, 0.1, 5) * 10) / 10;
   }
-  function setDepthFromX(clientX) {
-    const r = cableBox();
-    const t = clamp((clientX - r.left) / r.width, 0, 1);
-    depth = clamp(5 * (1 - t), 0.1, 5);
-    paint();
+  function clientToCm(clientX) {
+    const r = track.getBoundingClientRect();
+    return snapCm(5 * (1 - (clientX - r.left) / r.width));
   }
   function paint() {
-    const r = cable.getBoundingClientRect();
-    const parent = run.getBoundingClientRect();
+    const tr = track.getBoundingClientRect();
+    const cr = canvas.getBoundingClientRect();
+    const w = Math.max(tr.width, 1);
     const t = 1 - depth / 5;
-    const bladeX = r.left - parent.left + r.width * t;
+    const bladeX = (tr.left - cr.left) + w * t;
     jacket.style.left = `${bladeX}px`;
-    jacket.style.width = `${Math.max(8, r.right - parent.left - bladeX)}px`;
-    stripper.style.left = `${bladeX - 18}px`;
-    read.textContent = `끝 ${which} · 칼날 ${depth.toFixed(1)} cm`;
+    jacket.style.top = `${tr.top - cr.top + 36}px`;
+    jacket.style.width = `${Math.max(16, w - w * t)}px`;
+    stripper.style.left = `${clamp(bladeX - 20, 0, canvas.clientWidth - 70)}px`;
+    read.textContent = `끝 ${which} · 칼날 ${depth.toFixed(1)} cm  · 띠에 맞춘 뒤 재킷을 벗기시오`;
   }
 
   requestAnimationFrame(() => {
-    place(stripper, run.clientWidth - 90, 100);
+    place(stripper, Math.max(12, canvas.clientWidth - 90), Math.max(100, canvas.clientHeight - 80));
     paint();
   });
 
   add(bindDrag(stripper, {
-    container: run,
+    container: canvas,
     onMove(x, y, ev) {
-      place(stripper, clamp(x, 0, run.clientWidth - 70), clamp(y, 0, run.clientHeight - 58));
-      setDepthFromX(ev.clientX);
+      place(stripper, clamp(x, 0, canvas.clientWidth - 70), clamp(y, 0, canvas.clientHeight - 58));
+      depth = clientToCm(ev.clientX);
+      paint();
     },
   }));
 
   add(bindDrag(jacket, {
-    container: run,
+    container: canvas,
     onMove(x, y) {
       jacket.style.left = `${x}px`;
       jacket.style.top = `${y}px`;

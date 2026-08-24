@@ -434,6 +434,56 @@ button.ok { background: #2d4a2d; }
 }
 
 /* cut / strip */
+.measure-track {
+  position: relative;
+  margin: 8px 10px 0;
+  height: 78px;
+  background: #2f3128;
+  border: 2px solid #1a1b14;
+  overflow: hidden;
+}
+.ok-band {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: rgba(90, 160, 70, 0.28);
+  border-left: 2px solid #8ccc7a;
+  border-right: 2px solid #8ccc7a;
+  pointer-events: none;
+  z-index: 1;
+}
+.measure-track .ruler {
+  margin: 0;
+  height: 32px;
+  border: 0;
+  border-bottom: 2px solid #1a1b14;
+  position: relative;
+  z-index: 2;
+}
+.measure-track .cable-body,
+.measure-track .strip-cable {
+  position: absolute;
+  left: 0;
+  top: 42px;
+  height: 22px;
+  margin: 0;
+  right: auto;
+  z-index: 2;
+}
+.measure-track .cable-tip {
+  top: 36px;
+  z-index: 3;
+}
+.measure-track .jacket-peel {
+  top: 38px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #e8f0dc;
+}
 .ruler, .cm-ruler {
   height: 36px;
   background: var(--paper);
@@ -461,12 +511,12 @@ button.ok { background: #2d4a2d; }
 }
 .cut-run, .strip-run {
   position: relative;
-  height: calc(100% - 120px);
+  height: calc(100% - 160px);
   margin: 0 8px;
 }
 .cable-body {
   position: absolute;
-  left: 8px;
+  left: 0;
   top: 36px;
   height: 22px;
   background: #3f5a3c;
@@ -497,20 +547,20 @@ button.ok { background: #2d4a2d; }
   justify-content: center;
   font-size: 0.85rem;
 }
-.length-read {
-  position: absolute;
-  right: 10px;
-  top: 8px;
+.length-read, .depth-read {
+  position: relative;
+  margin: 6px 10px 0;
   font-weight: 900;
   color: #f0d48a;
+  font-size: 1.02rem;
 }
 
 .strip-cable {
   position: absolute;
-  left: 8%;
-  right: 8%;
-  top: 48px;
-  height: 36px;
+  left: 0;
+  right: 0;
+  top: 42px;
+  height: 24px;
   background: #3f5a3c;
   border: 2px solid #1a1b14;
 }
@@ -533,14 +583,16 @@ button.ok { background: #2d4a2d; }
   background: #3f5a3c;
   border: 2px solid #1a1b14;
   top: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #e8f0dc;
+  z-index: 4;
 }
-.depth-read {
-  position: absolute;
-  left: 10px;
-  top: 8px;
-  font-weight: 900;
-  color: #f0d48a;
-}
+.tool { z-index: 5; }
+.depth-read { color: #f0d48a; }
 
 /* untwist */
 .pairs, .straights {
