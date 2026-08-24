@@ -3,130 +3,35 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
-  <title>미림 랜선 실습실 — LAN Cable Lab</title>
+  <title>미림 랜선 검사실 — LAN Cable Lab</title>
   <link rel="stylesheet" href="css/style.css" />
-  <script type="importmap">
-  {
-    "imports": {
-      "three": "https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js",
-      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/"
-    }
-  }
-  </script>
 </head>
 <body>
+  <div class="grain" aria-hidden="true"></div>
   <div id="app">
-    <header>
-      <h1>미림마이스터고 · 랜선 제작 실습</h1>
-      <span class="sub">수첩만 보고, 큰 버튼 하나로</span>
-      <div class="chips">
-        <span class="chip ticket" id="job-ticket">의뢰: Cat5e 1m 스트레이트 · 양끝 T568B</span>
-        <span class="chip score">점수 <span id="score-val">100</span></span>
-        <span class="chip hidden" id="cat-chip">Cat5e</span>
-        <span class="chip hidden" id="len-chip">1m</span>
-        <span class="chip hidden" id="std-chip">끝A T568B</span>
-      </div>
+    <header class="booth">
+      <div class="booth-mark">MIRIM · UTP</div>
+      <h1>미림마이스터고 · 랜선 검사실</h1>
+      <button type="button" id="btn-reset" class="ghost hidden">새 의뢰</button>
     </header>
 
-    <aside id="notebook" aria-live="polite">
-      <div class="nb-tabs" role="tablist">
-        <button type="button" class="nb-tab on" id="tab-now">수첩</button>
-        <button type="button" class="nb-tab" id="btn-manual" title="실습 매뉴얼">매뉴얼</button>
-        <button type="button" class="nb-tab" id="btn-diagram" title="배선표">배선표</button>
-        <button type="button" class="nb-tab ghost" id="btn-retry">다시</button>
-        <button type="button" class="nb-tab ghost" id="btn-restart">새 의뢰</button>
-      </div>
-      <p class="job-ticket" id="job-ticket-nb">의뢰: Cat5e 1m 스트레이트 · 양끝 T568B</p>
-      <p class="end-badge" id="end-badge">끝 A</p>
-      <h2 id="coach-title">지금 할 일</h2>
-      <p id="coach-body"></p>
-      <div id="step-art" class="step-art" aria-hidden="true"></div>
-      <p id="coach-hint" class="hidden"></p>
-      <ul id="check-steps" class="nb-list"></ul>
-      <button type="button" id="btn-primary" class="primary">시작하기</button>
-      <button type="button" id="btn-start" class="hidden">시작하기</button>
-      <div id="cat-chips" class="cat-chips hidden"></div>
-      <div id="tool-tiles" class="tool-tiles hidden"></div>
-      <div id="panel-len" class="panel hidden">
-        <h3>길이</h3>
-        <div class="btn-row">
-          <button type="button" data-len="1m">1 m</button>
-          <button type="button" data-len="2m">2 m</button>
-        </div>
-      </div>
-      <details id="panel-strip" class="panel hidden">
-        <summary>깊이 바꾸기 (권장 2.2 cm)</summary>
-        <input id="strip-depth" type="range" min="1.0" max="4.0" step="0.1" value="2.2" />
-        <p id="strip-val">2.2 cm</p>
-        <button type="button" id="strip-go">이 깊이로 벗기기</button>
-      </details>
-      <div id="panel-arrange" class="panel hidden">
-        <div id="wire-row"></div>
-        <div class="btn-row hidden">
-          <button type="button" data-std="B">T568B (학교 기본)</button>
-          <button type="button" data-std="A">T568A</button>
-          <button type="button" id="btn-auto-order">규격대로 정렬</button>
-          <button type="button" class="ghost" id="btn-shuffle-order">일부러 섞기</button>
-        </div>
-      </div>
-      <div id="panel-insert" class="panel hidden">
-        <p id="tab-state">탭 아래 · 1번 왼쪽</p>
-        <button type="button" id="btn-tab" class="ghost">탭 방향 뒤집기</button>
-      </div>
-      <div id="panel-flip" class="panel hidden">
-        <button type="button" id="btn-next-end">반대쪽도 똑같이 T568B</button>
-      </div>
-      <div id="panel-result" class="panel hidden">
-        <h3>테스터 결과</h3>
-        <div id="result-box"></div>
-      </div>
-    </aside>
+    <section id="ticket" class="ticket" aria-label="작업지시서"></section>
 
-    <main id="stage">
-      <canvas id="view"></canvas>
+    <section id="cable-strip" class="cable-strip" aria-label="케이블 상태"></section>
+
+    <main id="desk">
+      <div id="stage" class="stage" role="application" aria-label="작업대"></div>
     </main>
 
-    <nav id="actions" aria-label="다음 할 일"></nav>
-
-    <aside id="side" class="hidden">
-      <ul id="check-tools"></ul>
-    </aside>
+    <footer id="dock">
+      <p id="prompt"></p>
+      <button type="button" id="btn-primary" class="primary hidden"></button>
+    </footer>
   </div>
 
-  <div id="hover-tip" class="hidden"></div>
-  <div id="toast" class="hidden"></div>
-
-  <div id="manual" class="hidden" role="dialog" aria-label="실습 매뉴얼">
-    <div class="book">
-      <h2>랜선 실습 바인더</h2>
-      <div id="manual-pages"></div>
-      <button type="button" id="btn-close-manual">닫기</button>
-    </div>
-  </div>
-
-  <div id="diagram" class="hidden" role="dialog" aria-label="배선표">
-    <div class="sheet">
-      <h2>작업대 배선표</h2>
-      <p class="sheet-lead">탭 아래 · 금핀 위 · 왼쪽 1번 · 이 의뢰는 양끝 T568B</p>
-      <h3>T568B (이 의뢰)</h3>
-      <div id="diag-b"></div>
-      <h3>T568A</h3>
-      <div id="diag-a"></div>
-      <div id="diag-vs"></div>
-      <div class="btn-row">
-        <button type="button" id="btn-pin-diagram">떠 있는 용지</button>
-        <button type="button" class="ghost" id="btn-close-diagram">접기</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="modal-celebrate" class="hidden">
-    <div class="modal-card">
-      <h2 id="cele-title">결과</h2>
-      <p id="cele-body"></p>
-      <button type="button" id="btn-celebrate-ok">확인</button>
-    </div>
-  </div>
+  <div id="inspect-sheet" class="sheet hidden" role="dialog" aria-label="재킷 인쇄"></div>
+  <div id="stamp-layer" class="stamp-layer hidden" role="status"></div>
+  <div id="toast" class="toast hidden" role="status"></div>
 
   <script type="module" src="js/main.js"></script>
 </body>

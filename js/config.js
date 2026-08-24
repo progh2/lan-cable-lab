@@ -1,133 +1,95 @@
-/** LAN Cable Lab — constants, pinouts, categories */
+/** LAN Cable Lab — 2D desk. First job is fixed. */
 
-export const CATS = {
-  cat5e: {
-    id: "cat5e",
-    name: "Cat5e",
-    color: 0x2f6b3a,
-    jacketHex: "#2f6b3a",
-    thickness: 0.055,
-    hasSeparator: false,
-    speed: "1 Gbps / 100 MHz",
-    use: "\uad50\uc2e4\u00b7\uc77c\ubc18 \ub124\ud2b8\uc6cc\ud06c\uc758 \uae30\ubcf8. \ubbf8\ub9bc\uc5d0\uc11c\ub3c4 \uac00\uc7a5 \ub9ce\uc774 \uc5f0\uc2b5\ud569\ub2c8\ub2e4.",
-    unlocked: true,
-  },
-  cat6: {
+export const JOB = {
+  id: "001",
+  title: "작업지시서",
+  cat: "Cat5e",
+  lengthM: 1.0,
+  lengthTolM: 0.05,
+  kind: "스트레이트",
+  standard: "T568B",
+  connector: "관통형 RJ45",
+  boot: "양쪽 필수",
+  stripCm: 3.0,
+  stripTolCm: 0.5,
+};
+
+export const T568B = ["wo", "o", "wg", "blu", "wblu", "g", "wbr", "br"];
+
+export const WIRES = {
+  wo: { id: "wo", name: "흰주황", short: "WO", hex: "#f3e0c4", stripe: "#e67e22" },
+  o: { id: "o", name: "주황", short: "O", hex: "#e67e22" },
+  wg: { id: "wg", name: "흰녹", short: "WG", hex: "#dcecd8", stripe: "#2e7d32" },
+  g: { id: "g", name: "녹", short: "G", hex: "#2e7d32" },
+  blu: { id: "blu", name: "파랑", short: "Blu", hex: "#1565c0" },
+  wblu: { id: "wblu", name: "흰파랑", short: "WBlu", hex: "#d6e6f5", stripe: "#1565c0" },
+  wbr: { id: "wbr", name: "흰갈", short: "WBr", hex: "#e8ddd6", stripe: "#6d4c41" },
+  br: { id: "br", name: "갈", short: "Br", hex: "#6d4c41" },
+};
+
+export const PAIRS = [
+  { ids: ["wo", "o"], name: "주황 페어" },
+  { ids: ["wg", "g"], name: "녹 페어" },
+  { ids: ["blu", "wblu"], name: "파랑 페어" },
+  { ids: ["wbr", "br"], name: "갈 페어" },
+];
+
+export const REELS = [
+  {
     id: "cat6",
-    name: "Cat6",
-    color: 0x1e4d8c,
-    jacketHex: "#1e4d8c",
-    thickness: 0.062,
-    hasSeparator: true,
-    speed: "1~10 Gbps / 250 MHz",
-    use: "\uc2ed\uc790 \ubd84\ub9ac\ub300(separator)\uac00 \uc788\uc5b4 \uac04\uc12d\uc774 \uc801\uc2b5\ub2c8\ub2e4. \uc11c\ubc84\uc2e4\u00b7\ud575\uc2ec \uad6c\uac04\uc5d0 \uc4ed\ub2c8\ub2e4.",
-    unlocked: true,
+    jacket: "#3a5474",
+    flange: "#d5d0c4",
+    print: "CAT6  23AWG  4PR UTP  250MHz",
+    reject: "재킷 인쇄는 CAT6입니다. 의뢰서는 Cat5e입니다.",
   },
-  cat6a: {
+  {
+    id: "cat5e",
+    jacket: "#3f5a3c",
+    flange: "#d5d0c4",
+    print: "CAT5E  24AWG  4PR UTP CMR  100MHz",
+    ok: true,
+  },
+  {
     id: "cat6a",
-    name: "Cat6a",
-    color: 0x5b2c8a,
-    jacketHex: "#5b2c8a",
-    thickness: 0.072,
-    hasSeparator: true,
-    speed: "10 Gbps / 500 MHz",
-    use: "\uc7ac\ud0b7\uc774 \ub354 \ub450\uaed8\uace0 \ucc28\ud3d0\u00b7\uac04\uaca9\uc774 \uc5c4\uaca9\ud569\ub2c8\ub2e4. \uc7a5\uac70\ub9ac 10G\uc5d0 \uc801\ud569.",
-    unlocked: true,
+    jacket: "#4a3c5c",
+    flange: "#d5d0c4",
+    print: "CAT6A  23AWG UTP  500MHz  10G",
+    reject: "이 릴은 CAT6A입니다. 의뢰는 Cat5e입니다.",
   },
-  cat7: {
-    id: "cat7",
-    name: "Cat7",
-    color: 0x8b1e1e,
-    jacketHex: "#8b1e1e",
-    thickness: 0.078,
-    hasSeparator: true,
-    speed: "10 Gbps+ / 600 MHz",
-    use: "\uac1c\ubcc4 \ud398\uc5b4 \ucc28\ud3d0(S/FTP). \ud559\uad50 \uc2e4\uc2b5\ubcf4\ub2e4 \ud2b9\uc218 \uc124\ube44\uc5d0\uc11c \ub354 \ud754\ud569\ub2c8\ub2e4.",
-    unlocked: true,
+  {
+    id: "blank",
+    jacket: "#6a6560",
+    flange: "#b8b3a8",
+    print: null,
+    faded: "마모됨  ·  ??AWG UTP",
+    reject: "재킷 인쇄가 없어 규격을 확인할 수 없습니다.",
   },
+];
+
+export const STAGES = [
+  "welcome",
+  "reel",
+  "cut",
+  "strip",
+  "untwist",
+  "sort",
+  "boot",
+  "insert",
+  "inspect",
+  "crimp",
+  "complete",
+];
+
+export const PROMPT = {
+  welcome: "의뢰서를 읽고, 접수 도장을 표시칸에 끌어 놓으시오.",
+  reel: "재킷 인쇄를 확인하시오. 맞는 릴만 작업대에 올리시오.",
+  cut: "케이블을 자로 끌어 빼고, 커터를 절단 위치에 놓으시오.",
+  strip: "스트리퍼를 약 3.0cm에 맞춘 뒤, 재킷을 잡아 벗기시오.",
+  untwist: "페어를 휙 끌어 풀고, 가닥 여덟 줄을 하나씩 곧게 펴시오.",
+  sort: "T568B 순서로 여덟 칸에 넣으시오. 자동 정렬은 없습니다.",
+  boot: "부트를 케이블에 끼우시오. 플러그보다 먼저입니다.",
+  insert: "관통형 플러그 뒤로 밀어, 가닥이 앞 구멍으로 나오게 하시오.",
+  inspect: "앞면 출구 색이 T568B인지 눈으로 확인하시오.",
+  crimp: "크림퍼를 플러그 위에 올리고, 쥐고 있으시오. 여분이 잘립니다.",
+  complete: "양쪽 끝 압착 완료. 관통형 T568B 스트레이트입니다.",
 };
-
-export const LENGTHS = [
-  { id: "1m", label: "1 m", meters: 1 },
-  { id: "2m", label: "2 m", meters: 2 },
-];
-
-export const WIRE_DEFS = {
-  wo: { id: "wo", name: "\ud770\uc8fc\ud669", hex: 0xffe0b2, stripe: 0xe67e22 },
-  o: { id: "o", name: "\uc8fc\ud669", hex: 0xe67e22 },
-  wg: { id: "wg", name: "\ud770\ub179", hex: 0xc8e6c9, stripe: 0x2e7d32 },
-  g: { id: "g", name: "\ub179", hex: 0x2e7d32 },
-  b: { id: "b", name: "\ud30c\ub791", hex: 0x1565c0 },
-  wb: { id: "wb", name: "\ud770\ud30c\ub791", hex: 0xbbdefb, stripe: 0x1565c0 },
-  wbr: { id: "wbr", name: "\ud770\uac08", hex: 0xd7ccc8, stripe: 0x6d4c41 },
-  br: { id: "br", name: "\uac08", hex: 0x6d4c41 },
-};
-
-export const T568B = ["wo", "o", "wg", "b", "wb", "g", "wbr", "br"];
-export const T568A = ["wg", "g", "wo", "b", "wb", "o", "wbr", "br"];
-export const STANDARD_LABEL = { A: "T568A", B: "T568B" };
-
-export const STEPS = [
-  "welcome", "pick_cat", "pick_len", "take_reel", "cut", "take_stripper", "strip",
-  "return_stripper", "untwist", "arrange", "take_cutter", "trim", "return_cutter",
-  "take_plug", "insert", "take_crimper", "crimp", "return_crimper", "flip_end",
-  "done_both", "take_tester", "test", "return_tester", "complete",
-];
-
-export const JOB_TICKET = "\uc758\ub8b0: Cat5e 1m \uc2a4\ud2b8\ub808\uc774\ud2b8 \u00b7 \uc591\ub05d T568B";
-
-export const JOB_CHECKS = [
-  { id: "accept", label: "\uc758\ub8b0 \ubc1b\uae30" },
-  { id: "reel", label: "Cat5e \uac00\uc838\uc624\uae30" },
-  { id: "cut", label: "\ucee4\ud130\ub85c \uc790\ub974\uae30" },
-  { id: "stripA", label: "\ub05d A \uc7ac\ud0b7 \ubc97\uae30\uae30" },
-  { id: "untwistA", label: "\ub05d A \ud398\uc5b4 \ud480\uae30" },
-  { id: "arrangeA", label: "\ub05d A T568B \uc815\ub82c" },
-  { id: "trimA", label: "\ub05d A \ud2b8\ub9bc" },
-  { id: "crimpA", label: "\ub05d A RJ45 \uc555\ucc29" },
-  { id: "endB", label: "\ubc18\ub300\ucabd\ub3c4 \ub611\uac19\uc774 T568B" },
-  { id: "stripB", label: "\ub05d B \uc7ac\ud0b7 \ubc97\uae30\uae30" },
-  { id: "crimpB", label: "\ub05d B \uc555\ucc29" },
-  { id: "test", label: "\ud14c\uc2a4\ud130\ub85c \ud655\uc778" },
-  { id: "done", label: "\uc758\ub8b0 \uc644\ub8cc" },
-];
-
-function step(body, art) {
-  return { title: "\uc9c0\uae08 \ud560 \uc77c", body, hint: "\ub9c9\ud788\uba74 \uc218\ucca9\uc744 \uba3c\uc800 \ubcf4\uc138\uc694.", art };
-}
-
-export const COACH = {
-  welcome: step("\uccab \uc758\ub8b0\ub294 Cat5e 1m \uc2a4\ud2b8\ub808\uc774\ud2b8, \uc591\ub05d T568B\uc785\ub2c8\ub2e4. \uc2dc\uc791\ud558\uae30\ub97c \ub204\ub974\uc138\uc694.", "welcome"),
-  pick_cat: step("\uc774 \uc758\ub8b0\ub294 Cat5e\ub85c \uc774\ubbf8 \uc815\ud574\uc838 \uc788\uc5b4\uc694. \uc120\ubc18\uc5d0\uc11c \uac00\uc838\uc624\uba74 \ub429\ub2c8\ub2e4.", "reel"),
-  pick_len: step("\uae38\uc774\ub294 1m\ub85c \uc774\ubbf8 \uc815\ud574\uc838 \uc788\uc5b4\uc694.", "reel"),
-  take_reel: step("\uc120\ubc18\uc5d0\uc11c Cat5e \ub9b4\uc744 \uc791\uc5c5\ub300\ub85c \uac00\uc838\uc624\uc138\uc694.", "reel"),
-  cut: step("\ucee4\ud130\ub85c 1m\ub9cc\ud07c \ud55c \ubc88\uc5d0 \uc790\ub974\uc138\uc694.", "cutter"),
-  take_stripper: step("\uc2a4\ud2b8\ub9ac\ud37c\ub85c \uc7ac\ud0b7\ub9cc 2.2cm \ubc97\uae30\uc138\uc694.", "stripper"),
-  strip: step("\uad8c\uc7a5 \uae4a\uc774 2.2cm\ub85c \uc7ac\ud0b7\ub9cc \ubc97\uae30\uc138\uc694.", "stripper"),
-  return_stripper: step("\uc4f4 \uc2a4\ud2b8\ub9ac\ud37c\ub97c \uac78\uc774\uc5d0 \uac70\uc138\uc694.", "hang"),
-  untwist: step("\ub124 \uc30d\uc744 \uc9e7\uac8c\ub9cc \ud478\uc138\uc694.", "untwist"),
-  arrange: step("\uc218\ucca9\uc758 T568B \uadf8\ub9bc\ub300\ub85c 8\uac00\ub2e5\uc744 \uc815\ub82c\ud558\uc138\uc694.", "arrange"),
-  take_cutter: step("\ucee4\ud130\ub85c 8\uac00\ub2e5 \ub05d\uc744 \uac00\uc9c0\ub7f0\ud788 \uc790\ub974\uc138\uc694.", "trim"),
-  trim: step("\ud50c\ub7ec\uadf8 \uae4a\uc774\uc5d0 \ub9de\uac8c \ub05d\uc744 \ud2b8\ub9bc\ud558\uc138\uc694.", "trim"),
-  return_cutter: step("\ucee4\ud130\ub97c \uac78\uc774\uc5d0 \uac70\uc138\uc694.", "hang"),
-  take_plug: step("RJ45\ub97c \ub07c\uc6b0\uace0 \ud0ed\uc740 \uc544\ub798\ub85c \ub450\uc138\uc694.", "insert"),
-  insert: step("\uc7ac\ud0b7\uc774 \ud50c\ub7ec\uadf8 \uc548\uae4c\uc9c0 \ub4e4\uc5b4\uac00\uac8c \ub07c\uc6b0\uc138\uc694.", "insert"),
-  take_crimper: step("\ud06c\ub9bc\ud37c\ub85c \ud55c \ubc88\uc5d0 \uc555\ucc29\ud558\uc138\uc694.", "crimp"),
-  crimp: step("\ud06c\ub9bc\ud37c\ub85c \ud55c \ubc88\uc5d0 \ud798 \uc788\uac8c \uc555\ucc29\ud558\uc138\uc694.", "crimp"),
-  return_crimper: step("\ud06c\ub9bc\ud37c\ub97c \uac78\uc774\uc5d0 \uac70\uc138\uc694.", "hang"),
-  flip_end: step("\ubc18\ub300\ucabd\ub3c4 \ub611\uac19\uc774 T568B\ub85c \ub9cc\ub4dc\uc138\uc694.", "crossover"),
-  done_both: step("\ud14c\uc2a4\ud130\ub85c 8\uac00\ub2e5\uc774 \uc774\uc5b4\uc84c\ub294\uc9c0 \ud655\uc778\ud558\uc138\uc694.", "tester"),
-  take_tester: step("\ud14c\uc2a4\ud130\ub85c \uc591 \ub05d\uc744 \ud655\uc778\ud558\uc138\uc694.", "tester"),
-  test: step("\ud14c\uc2a4\ud130\ub85c 1\ubd80\ud130 8\uae4c\uc9c0 \ucf1c\uc9c0\ub294\uc9c0 \ubcf4\uc138\uc694.", "tester"),
-  return_tester: step("\ud14c\uc2a4\ud130\ub97c \uac78\uc774\uc5d0 \uac78\uace0 \uc758\ub8b0\ub97c \ub9c8\uce58\uc138\uc694.", "hang"),
-  complete: step("\uc758\ub8b0 \uc644\ub8cc! \uc791\uc5c5\ub300\uac00 \uae68\ub057\ud558\uba74 \uc798\ud55c \uac81\ub2c8\ub2e4.", "complete"),
-};
-
-export const COMMON_MISTAKES = [
-  { id: "deep", title: "\ud0c8\ud53c\uac00 \ub108\ubb34 \uae4a\uc74c", text: "\ud398\uc5b4\uac00 \uae38\uac8c \ud480\ub9ac\uba74 \ub204\ud654\uac00 \ucee4\uc838\uc694." },
-  { id: "swap36", title: "3\u00b76\ubc88 \ubc14\uafc8", text: "\ub179/\uc8fc\ud669 \ud398\uc5b4\ub97c \ubc14\uafb8\uba74 \ud14c\uc2a4\ud130\uac00 \uc5b4\uadf3\ub098\uc694." },
-  { id: "accidental-x", title: "\uc758\ub3c4\uce58 \uc54a\uc740 \ud06c\ub85c\uc2a4", text: "\uc591 \ub05d\uc744 \ub2e4\ub978 \ud45c\uc900\uc73c\ub85c \ub9cc\ub4e4\uba74 \ud06c\ub85c\uc2a4\uac00 \ub429\ub2c8\ub2e4." },
-  { id: "tab", title: "\ud0ed\uc744 \ub4a4\uc9d1\uc74c", text: "\ud0ed\uc774 \uc704\uba74 1\ubc88\uc774 \ubc18\ub300\ub85c \uac00\uc694." },
-  { id: "uneven", title: "\ud2b8\ub9bc\uc774 \ub4e4\ucabd\ub0a0\ucabd", text: "\uc9e7\uc740 \uac00\ub2e5\uc740 \ud540\uc774 \uc548 \ub2ee\uc544 LED\uac00 \uaed8\uc838\uc694." },
-  { id: "tools", title: "\uacf5\uad6c\ub97c \ub450\uace0 \uac10", text: "\ub2e4\uc74c \uc870\ub97c \uc704\ud574 \uac78\uc774\uc5d0 \uac78\uc5b4 \uc8fc\uc138\uc694." },
-];
