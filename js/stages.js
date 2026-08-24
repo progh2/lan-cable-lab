@@ -14,10 +14,7 @@ function el(html) {
 }
 
 function toolMarkup(kind, label) {
-  const guide = kind === "cutter"
-    ? `<i class="cut-guide" aria-hidden="true"></i>`
-    : "";
-  return `<div class="${kind} tool" id="${kind}" role="img" aria-label="${label}">${guide}${TOOL_SVG[kind]}<span class="tool-label">${label}</span></div>`;
+  return `<div class="${kind} tool" id="${kind}" role="img" aria-label="${label}">${TOOL_SVG[kind]}<span class="tool-label">${label}</span></div>`;
 }
 
 function clampTool(node, x, y, box) {
@@ -30,19 +27,22 @@ function clampTool(node, x, y, box) {
 /** Flat 2D silhouettes — flush nipper, jacket stripper, RJ45 crimp tool. */
 const TOOL_SVG = {
   cutter: `
-    <svg class="tool-svg" viewBox="0 0 150 100" aria-hidden="true">
-      <path d="M62 54 C84 64 112 76 134 86 C140 89 146 86 145 79 C144 72 138 70 132 68 C110 58 84 50 64 48 Z" fill="#2c2c28" stroke="#1a1b14" stroke-width="2" stroke-linejoin="round"/>
-      <path d="M78 66 L128 80" stroke="#5a5a52" stroke-width="2.4" stroke-linecap="round" opacity=".4"/>
-      <path d="M62 46 C84 36 112 24 134 14 C140 11 146 14 145 21 C144 28 138 30 132 32 C110 42 84 50 64 52 Z" fill="#9c1f1f" stroke="#1a1b14" stroke-width="2" stroke-linejoin="round"/>
-      <path d="M78 34 L128 20" stroke="#d46a5a" stroke-width="2.4" stroke-linecap="round" opacity=".45"/>
-      <path d="M72 46 C80 50 80 50 72 54" stroke="#8c8e80" stroke-width="2" fill="none"/>
-      <path d="M40 40 L66 44 L66 56 L40 60 Z" fill="#7d868e" stroke="#1a1b14" stroke-width="2"/>
-      <path d="M8 66 L8 51 L46 50 L52 64 L30 74 Z" fill="#8b9298" stroke="#1a1b14" stroke-width="2" stroke-linejoin="round"/>
-      <path d="M8 34 L8 49 L46 50 L52 36 L30 26 Z" fill="#c5ccd2" stroke="#1a1b14" stroke-width="2" stroke-linejoin="round"/>
-      <path d="M8 34 L8 66" stroke="#efe6cf" stroke-width="2.4" stroke-linecap="butt"/>
-      <path d="M10 50 L46 50" stroke="#3a3c32" stroke-width="1.5"/>
-      <circle cx="56" cy="50" r="8" fill="#c9b888" stroke="#1a1b14" stroke-width="2"/>
-      <circle cx="56" cy="50" r="3.1" fill="#6e7064"/>
+    <svg class="tool-svg" viewBox="0 0 170 110" overflow="visible" aria-hidden="true">
+      <line class="cut-guide" x1="6" y1="-48" x2="6" y2="154" stroke="#f0d48a" stroke-width="2.2" stroke-dasharray="5 4"/>
+      <g>
+        <path d="M70 58 C96 70 124 84 150 96 C157 99 164 95 163 87 C162 79 155 76 148 74 C122 64 96 54 72 52 Z" fill="#2c2c28" stroke="#1a1b14" stroke-width="2.2" stroke-linejoin="round"/>
+        <path d="M88 72 L146 90" stroke="#5a5a52" stroke-width="2.6" stroke-linecap="round" opacity=".4"/>
+        <path d="M70 52 C96 40 124 26 150 14 C157 11 164 15 163 23 C162 31 155 34 148 36 C122 46 96 56 72 58 Z" fill="#9c1f1f" stroke="#1a1b14" stroke-width="2.2" stroke-linejoin="round"/>
+        <path d="M88 38 L146 20" stroke="#d46a5a" stroke-width="2.6" stroke-linecap="round" opacity=".45"/>
+        <path d="M82 50 C92 55 92 55 82 60" stroke="#8c8e80" stroke-width="2.2" fill="none"/>
+        <path d="M48 42 L74 47 L74 63 L48 68 Z" fill="#7d868e" stroke="#1a1b14" stroke-width="2.2"/>
+        <path d="M10 82 L10 56 L50 55 L60 74 L36 90 Z" fill="#8b9298" stroke="#1a1b14" stroke-width="2.2" stroke-linejoin="round"/>
+        <path d="M10 28 L10 54 L50 55 L60 36 L36 20 Z" fill="#c5ccd2" stroke="#1a1b14" stroke-width="2.2" stroke-linejoin="round"/>
+        <path d="M10 28 L10 82" stroke="#efe6cf" stroke-width="2.8" stroke-linecap="butt"/>
+        <path d="M12 55 L50 55" stroke="#2a2b22" stroke-width="1.8"/>
+        <circle cx="64" cy="55" r="9" fill="#c9b888" stroke="#1a1b14" stroke-width="2.2"/>
+        <circle cx="64" cy="55" r="3.4" fill="#6e7064"/>
+      </g>
     </svg>`,
   stripper: `
     <svg class="tool-svg" viewBox="0 0 120 88" aria-hidden="true">
@@ -194,6 +194,7 @@ function cut(root, api, add) {
       <div class="measure-track" id="track">
         <div class="ok-band" style="left:${lo}%;width:${hi - lo}%"></div>
         <div class="ruler" id="ruler"></div>
+        <i class="cut-hair hidden" id="hair" aria-hidden="true"></i>
         <div class="cable-body" id="body"></div>
         <div class="cable-cut-face hidden" id="face" aria-hidden="true"></div>
         <div class="cable-scrap hidden" id="scrap" aria-hidden="true"></div>
@@ -207,6 +208,7 @@ function cut(root, api, add) {
   const track = qs("#track", box);
   const ruler = qs("#ruler", box);
   const body = qs("#body", box);
+  const hair = qs("#hair", box);
   const face = qs("#face", box);
   const scrap = qs("#scrap", box);
   const tip = qs("#tip", box);
@@ -238,32 +240,43 @@ function cut(root, api, add) {
   function paint() {
     const w = Math.max(track.clientWidth, 1);
     const unspoolPx = (unspool / 1.5) * w;
+    const guideM = clientToM(guideClientX());
+    const markM = cutAt != null ? cutAt : guideM;
+    const t = track.getBoundingClientRect();
+    const c = cutter.getBoundingClientRect();
+    const cy = c.top + c.height / 2;
+    const gx = guideClientX();
+    const overTrack = gx >= t.left - 10 && gx <= t.right + 10 && cy >= t.top - 36 && cy <= t.bottom + 56;
+    if (overTrack) {
+      hair.classList.remove("hidden");
+      hair.style.left = `${(markM / 1.5) * w}px`;
+    } else {
+      hair.classList.add("hidden");
+    }
     if (cutAt != null) {
       const cutPx = (cutAt / 1.5) * w;
       body.style.width = `${Math.max(12, cutPx)}px`;
       body.classList.add("severed");
       face.classList.remove("hidden");
-      face.style.left = `${Math.max(0, cutPx - 4)}px`;
-      const scrapW = Math.max(0, unspoolPx - cutPx - 10);
-      if (scrapW > 8) {
+      face.style.left = `${Math.max(0, cutPx - 3)}px`;
+      const scrapW = Math.max(0, unspoolPx - cutPx - 12);
+      if (scrapW > 10) {
         scrap.classList.remove("hidden");
-        scrap.style.left = `${cutPx + 8}px`;
+        scrap.style.left = `${cutPx + 10}px`;
         scrap.style.width = `${scrapW}px`;
-        tip.classList.add("faded");
       } else {
         scrap.classList.add("hidden");
-        tip.classList.remove("faded");
       }
-      tip.style.left = `${Math.max(0, unspoolPx - 12)}px`;
+      tip.classList.add("hidden");
       read.textContent = `절단 기준 ${cutAt.toFixed(2)} m · 푼 길이 ${unspool.toFixed(2)} m`;
     } else {
       body.style.width = `${Math.max(24, unspoolPx)}px`;
       body.classList.remove("severed");
       face.classList.add("hidden");
       scrap.classList.add("hidden");
-      tip.classList.remove("faded");
+      tip.classList.remove("hidden");
       tip.style.left = `${Math.max(0, unspoolPx - 12)}px`;
-      read.textContent = `푼 길이 ${unspool.toFixed(2)} m · 파선 ${clientToM(guideClientX()).toFixed(2)} m`;
+      read.textContent = `푼 길이 ${unspool.toFixed(2)} m · 파선 ${guideM.toFixed(2)} m`;
     }
   }
   function checkCutter() {

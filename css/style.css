@@ -566,33 +566,30 @@ button.ok { background: #2d4a2d; }
   opacity: 0.38;
 }
 .cutter.tool {
-  width: 136px;
+  width: 148px;
   overflow: visible;
   align-items: flex-start;
 }
 .cutter .tool-svg {
-  width: 124px;
-  height: 84px;
+  width: 140px;
+  height: 92px;
+  overflow: visible;
+  filter: none;
 }
 .cutter .tool-label {
   align-self: center;
   width: 100%;
   text-align: center;
 }
-.cutter .cut-guide {
+.cut-hair {
   position: absolute;
-  left: 6px;
-  top: -54px;
-  width: 2px;
-  height: 168px;
-  background: repeating-linear-gradient(
-    180deg,
-    #f0d48a 0 6px,
-    transparent 6px 11px
-  );
-  box-shadow: 0 0 0 1px rgba(26, 27, 20, 0.55);
+  top: 0;
+  bottom: 0;
+  width: 0;
+  border-left: 2px dashed #f0d48a;
+  z-index: 4;
   pointer-events: none;
-  z-index: 2;
+  transform: translateX(-1px);
 }
 .tool {
   width: 92px;
