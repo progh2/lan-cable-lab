@@ -1,4 +1,4 @@
-import { CATS, COACH, WIRE_DEFS, T568A, T568B, COMMON_MISTAKES } from "./config.js";
+import { CATS, COACH, WIRE_DEFS, T568A, T568B, COMMON_MISTAKES, JOB_CHECKS } from "./config.js";
 import { endState } from "./state.js";
 
 export function qs(sel) { return document.querySelector(sel); }
@@ -11,7 +11,10 @@ function contrast(hex) {
 const HEX = { wo: "#ffe0b2", o: "#e67e22", wg: "#c8e6c9", g: "#2e7d32", b: "#1565c0", wb: "#bbdefb", wbr: "#d7ccc8", br: "#6d4c41" };
 
 export function bindUI(handlers) {
-  qs("#btn-start").addEventListener("click", handlers.start);
+  const start = qs("#btn-start");
+  if (start) start.addEventListener("click", handlers.start);
+  const prim = qs("#btn-primary");
+  if (prim) prim.addEventListener("click", () => handlers.primary && handlers.primary());
   qs("#btn-manual").addEventListener("click", handlers.toggleManual);
   qs("#btn-diagram").addEventListener("click", handlers.toggleDiagram);
   qs("#btn-close-manual").addEventListener("click", handlers.toggleManual);
@@ -32,14 +35,61 @@ export function bindUI(handlers) {
   qs("#actions").addEventListener("click", (e) => { const b = e.target.closest("[data-act]"); if (b) handlers.action(b.dataset.act); });
 }
 
+export function getPrimary(state) {
+  const labels = { stripper: "스트리퍼", cutter: "커터", crimper: "크림퍼", tester: "테스터" };
+  const outName = Object.keys(state.toolsOut).find((k) => state.toolsOut[k]);
+  const hangish = new Set(["return_stripper", "return_cutter", "return_crimper", "return_tester"]);
+  const need = (name) => {
+    const s = state.step;
+    if (name === "cutter") return s === "cut" || s === "take_cutter" || s === "trim";
+    if (name === "stripper") return s === "take_stripper" || s === "strip";
+    if (name === "crimper") return s === "take_crimper" || s === "crimp";
+    if (name === "tester") return s === "take_tester" || s === "test" || s === "done_both";
+    return false;
+  };
+  if (outName && (hangish.has(state.step) || !need(outName))) {
+    return { act: "hang", label: labels[outName] + " 걸이에 걸기", art: "hang" };
+  }
+  const map = {
+    welcome: { act: "start", label: "의뢰 받기 · 시작하기" },
+    pick_cat: { act: "reel:cat5e", label: "선반에서 Cat5e 가져오기" },
+    pick_len: { act: "reel:cat5e", label: "선반에서 Cat5e 가져오기" },
+    take_reel: { act: "reel:cat5e", label: "선반에서 Cat5e 가져오기" },
+    cut: { act: "cut", label: "커터로 자르기" },
+    take_stripper: { act: "strip", label: "스트리퍼로 재킷 벗기기 (2.2cm)" },
+    strip: { act: "strip", label: "스트리퍼로 재킷 벗기기 (2.2cm)" },
+    untwist: { act: "untwist", label: "페어 풀기" },
+    arrange: { act: "arrange", label: "T568B 그림대로 정렬" },
+    take_cutter: { act: "trim", label: "끝 트림하기" },
+    trim: { act: "trim", label: "끝 트림하기" },
+    take_plug: { act: "insert", label: "RJ45 끼우기" },
+    insert: { act: "insert", label: "RJ45 끼우기" },
+    take_crimper: { act: "crimp", label: "RJ45 끼우고 압착" },
+    crimp: { act: "crimp", label: "압착하기" },
+    flip_end: { act: "flip", label: "반대쪽도 똑같이 T568B" },
+    done_both: { act: "test", label: "테스터로 확인" },
+    take_tester: { act: "test", label: "테스터로 확인" },
+    test: { act: "test", label: "테스터로 확인" },
+    complete: { act: "restart", label: "새 의뢰 받기" },
+  };
+  return map[state.step] || { act: "hang", label: "다음" };
+}
+
 export function renderCoach(state) {
   const c = COACH[state.step] || COACH.welcome;
-  qs("#coach-title").textContent = c.title;
+  const title = qs("#coach-title");
+  if (title) title.textContent = "지금 할 일";
   qs("#coach-body").textContent = c.body;
-  qs("#coach-hint").textContent = c.hint;
-  qs("#end-badge").textContent = state.currentEnd === "A" ? "끝 A (한쪽)" : "끝 B (반대쪽)";
-  qs("#score-val").textContent = String(state.score);
-  renderStepArt(c.art || state.step);
+  const hint = qs("#coach-hint");
+  if (hint) hint.textContent = c.hint || "";
+  const badge = qs("#end-badge");
+  if (badge) badge.textContent = state.currentEnd === "A" ? "끝 A" : "끝 B · 반대쪽도 T568B";
+  const score = qs("#score-val");
+  if (score) score.textContent = String(state.score);
+  const prim = getPrimary(state);
+  renderStepArt(prim.art || c.art || state.step);
+  const btn = qs("#btn-primary");
+  if (btn) btn.textContent = prim.label;
 }
 
 export function renderStepArt(kind) {
@@ -50,49 +100,47 @@ export function renderStepArt(kind) {
 
 export function renderCatChips(state) {
   const box = qs("#cat-chips");
-  box.classList.toggle("hidden", !["pick_cat", "welcome", "take_reel"].includes(state.step));
-  box.innerHTML = Object.values(CATS).map((c) =>
-    `<button type="button" class="cat-btn ${state.cat === c.id ? "sel" : ""}" data-cat="${c.id}" style="--j:${c.jacketHex}"><span class="cat-swatch"></span>${c.name}<small>${c.speed}</small></button>`
-  ).join("");
+  box.classList.add("hidden");
+  box.innerHTML = "";
 }
 
 export function renderToolTiles(state) {
+  const box = qs("#tool-tiles");
+  const prim = getPrimary(state);
+  if (prim.act !== "hang") { box.classList.add("hidden"); box.innerHTML = ""; return; }
+  box.classList.remove("hidden");
   const names = [["stripper", "스트리퍼"], ["cutter", "커터"], ["crimper", "크림퍼"], ["tester", "테스터"]];
-  qs("#tool-tiles").innerHTML = names.map(([id, label]) => {
-    const out = state.toolsOut[id];
-    return `<button type="button" class="tool-tile ${out ? "out" : "hung"}" data-tool="${id}"><strong>${label}</strong><span>${out ? "꺼냄" : "걸림"}</span></button>`;
-  }).join("");
+  box.innerHTML = names.filter(([id]) => state.toolsOut[id]).map(([id, label]) =>
+    `<button type="button" class="tool-tile out" data-tool="${id}"><strong>${label}</strong><span>꺼냄</span></button>`
+  ).join("");
 }
 
-const ACTION_DEFS = [
-  { act: "reel:cat5e", label: "선반 Cat5e", steps: ["welcome", "pick_cat", "take_reel"] },
-  { act: "reel:cat6", label: "선반 Cat6", steps: ["welcome", "pick_cat", "take_reel"] },
-  { act: "reel:cat6a", label: "선반 Cat6a", steps: ["welcome", "pick_cat"] },
-  { act: "reel:cat7", label: "선반 Cat7", steps: ["welcome", "pick_cat"] },
-  { act: "tool:cutter", label: "커터", steps: ["cut", "take_cutter"] },
-  { act: "tool:stripper", label: "스트리퍼", steps: ["take_stripper"] },
-  { act: "tool:crimper", label: "크림퍼", steps: ["take_crimper"] },
-  { act: "tool:tester", label: "테스터", steps: ["done_both", "take_tester"] },
-  { act: "plug", label: "플러그", steps: ["take_plug"] },
-  { act: "cable", label: "케이블 작업", steps: ["cut", "strip", "untwist", "trim", "insert", "crimp"] },
-  { act: "test", label: "테스트 시작", steps: ["test"] },
-  { act: "hang", label: "반납", steps: ["return_stripper", "return_cutter", "return_crimper", "return_tester", "cut"] },
-];
-
 export function renderActions(state) {
-  const bar = qs("#actions");
-  const step = state.step;
-  bar.innerHTML = ACTION_DEFS.filter((d) => d.steps.includes(step) || (d.act === `reel:${state.cat}` && step === "take_reel"))
-    .map((d) => `<button type="button" class="act-btn hi" data-act="${d.act}">${d.label}</button>`).join("");
-  if (!bar.innerHTML) bar.innerHTML = `<button type="button" class="act-btn ghost" data-act="hang">반납</button>`;
+  const prim = getPrimary(state);
+  qs("#actions").innerHTML = `<button type="button" class="act-btn hi" data-act="${prim.act}">${prim.label}</button>`;
 }
 
 export function renderChecklist(state) {
-  const e = endState(state);
-  const items = [["카테고리", !!state.cat], ["길이", !!state.length && state.step !== "welcome"], ["재단", state.cableOnBench], ["탈피", e.stripped], ["페어 정리", e.untwisted], ["배열", e.orderLocked || e.trimmed], ["트림", e.trimmed], ["삽입", e.inserted], ["압착 A", state.ends.A.crimped], ["압착 B", state.ends.B.crimped], ["테스트", !!state.testResult]];
-  const tools = [["스트리퍼", !state.toolsOut.stripper], ["커터", !state.toolsOut.cutter], ["크림퍼", !state.toolsOut.crimper], ["테스터", !state.toolsOut.tester]];
-  qs("#check-steps").innerHTML = items.map(([n, ok]) => `<li class="${ok ? "ok" : ""}">${ok ? "✓" : "○"} ${n}</li>`).join("");
-  qs("#check-tools").innerHTML = tools.map(([n, ok]) => `<li class="${ok ? "ok" : "warn"}">${ok ? "걸림" : "꺼냄"} · ${n}</li>`).join("");
+  const A = state.ends.A, B = state.ends.B;
+  const done = {
+    accept: state.step !== "welcome",
+    reel: state.reelOnBench || state.cableOnBench,
+    cut: state.cableOnBench,
+    stripA: A.stripped, untwistA: A.untwisted, arrangeA: A.orderLocked || A.trimmed,
+    trimA: A.trimmed, crimpA: A.crimped,
+    endB: state.currentEnd === "B" || B.crimped,
+    stripB: B.stripped, crimpB: B.crimped,
+    test: !!state.testResult, done: state.step === "complete",
+  };
+  let foundNow = false;
+  qs("#check-steps").innerHTML = JOB_CHECKS.map((it) => {
+    const ok = !!done[it.id];
+    let cls = ok ? "ok" : "";
+    if (!ok && !foundNow) { cls = "now"; foundNow = true; }
+    return `<li class="${cls}">${ok ? "✓" : "○"} ${it.label}</li>`;
+  }).join("");
+  const toolsEl = qs("#check-tools");
+  if (toolsEl) toolsEl.innerHTML = "";
 }
 
 export function renderWires(state) {
@@ -111,13 +159,13 @@ export function renderWires(state) {
 
 export function setPanels(state) {
   const step = state.step;
-  qs("#panel-len").classList.toggle("hidden", step !== "pick_len");
+  qs("#panel-len").classList.add("hidden");
   qs("#panel-arrange").classList.toggle("hidden", step !== "arrange");
-  qs("#panel-strip").classList.toggle("hidden", step !== "strip");
+  qs("#panel-strip").classList.toggle("hidden", step !== "strip" && step !== "take_stripper");
   qs("#panel-insert").classList.toggle("hidden", step !== "insert");
   qs("#panel-flip").classList.toggle("hidden", step !== "flip_end");
   qs("#panel-result").classList.toggle("hidden", !["test", "return_tester", "complete"].includes(step) || !state.testResult);
-  qs("#hover-tip").classList.toggle("hidden", true);
+  qs("#hover-tip").classList.add("hidden");
 }
 
 export function showHoverTip(text, x, y) {
@@ -134,10 +182,9 @@ export function renderResult(result) {
 }
 
 export function showCelebrate(result, score, toolsOut) {
-  const m = qs("#modal-celebrate");
   qs("#cele-title").textContent = result && result.pass ? (result.kind === "crossover" ? "크로스오버 완성!" : "합격! 연결 성공") : "다시 한 번!";
   qs("#cele-body").textContent = result && result.pass ? `점수 ${score}점. ${toolsOut ? "공구가 아직 나와 있으면 걸이에 돌려 주세요." : "공구도 모두 제자리입니다."}` : ((result && result.reasons[0]) || "테스터가 실패를 표시했습니다.");
-  m.classList.remove("hidden");
+  qs("#modal-celebrate").classList.remove("hidden");
 }
 
 function plugPins(order, title) {
@@ -153,19 +200,18 @@ function twoPlugs(cross) {
     const dest = cross ? 20 + ((i === 0 ? 2 : i === 1 ? 5 : i === 2 ? 0 : i === 5 ? 1 : i) * 14) : y;
     return `<line x1="70" y1="${y}" x2="170" y2="${dest}" stroke="${HEX[id]}" stroke-width="4"/>`;
   }).join("");
-  return `<svg viewBox="0 0 240 140" class="art-svg" role="img" aria-label="${cross ? "크로스오버" : "스트레이트"}"><rect x="8" y="8" width="52" height="124" rx="8" fill="#cfc3a6" stroke="#3d2614" stroke-width="2"/><rect x="180" y="8" width="52" height="124" rx="8" fill="#cfc3a6" stroke="#3d2614" stroke-width="2"/>${a}<text x="120" y="138" text-anchor="middle" font-size="12" font-weight="800">${cross ? "A ↔ B 교차" : "1:1 같은 색"}</text></svg>`;
+  return `<svg viewBox="0 0 240 140" class="art-svg" role="img"><rect x="8" y="8" width="52" height="124" rx="8" fill="#cfc3a6" stroke="#3d2614" stroke-width="2"/><rect x="180" y="8" width="52" height="124" rx="8" fill="#cfc3a6" stroke="#3d2614" stroke-width="2"/>${a}<text x="120" y="138" text-anchor="middle" font-size="12" font-weight="800">${cross ? "A ↔ B 교차" : "1:1 같은 색"}</text></svg>`;
 }
-const icon = (label, inner) => `<svg viewBox="0 0 160 110" class="art-svg" aria-hidden="true">${inner}<text x="80" y="104" text-anchor="middle" font-size="12" font-weight="800">${label}</text></svg>`;
+const icon = (label, inner) => `<svg viewBox="0 0 160 110" class="art-svg">${inner}<text x="80" y="104" text-anchor="middle" font-size="12" font-weight="800">${label}</text></svg>`;
 const iconReel = () => icon("케이블 릴", `<circle cx="70" cy="55" r="38" fill="#2f6b3a" stroke="#1a1208" stroke-width="3"/><circle cx="70" cy="55" r="12" fill="#efe4cf"/>`);
 const iconCutter = () => icon("커터", `<path d="M20 80 L70 40 L80 50 L30 90 Z" fill="#888"/><path d="M90 30 L140 20 L145 32 L95 44 Z" fill="#c45c26"/>`);
 const iconStripper = () => icon("스트리퍼", `<rect x="30" y="40" width="100" height="28" rx="8" fill="#3d5a80"/><rect x="70" y="48" width="40" height="12" fill="#1a1208"/>`);
 const iconUntwist = () => icon("페어 풀기", `<path d="M20 70 q20 -30 40 0 t40 0 t40 0" fill="none" stroke="#e67e22" stroke-width="4"/><path d="M20 78 q20 -30 40 0 t40 0 t40 0" fill="none" stroke="#2e7d32" stroke-width="4"/>`);
 const iconTrim = () => icon("끝 맞추기", Object.values(HEX).map((c,i)=>`<rect x="${20+i*16}" y="30" width="12" height="40" fill="${c}"/>`).join("") + `<line x1="16" y1="28" x2="148" y2="28" stroke="#c45c26" stroke-width="3"/>`);
-const iconInsert = () => icon("탭 아래 · 삽입", `<rect x="90" y="20" width="50" height="55" rx="8" fill="#d8c4a0" stroke="#3d2614" stroke-width="3"/><rect x="20" y="40" width="70" height="18" rx="6" fill="#2f6b3a"/>`);
+const iconInsert = () => icon("탭 아래", `<rect x="90" y="20" width="50" height="55" rx="8" fill="#d8c4a0" stroke="#3d2614" stroke-width="3"/><rect x="20" y="40" width="70" height="18" rx="6" fill="#2f6b3a"/>`);
 const iconCrimp = () => icon("크림퍼", `<path d="M30 90 L70 40 L90 48 L50 98 Z" fill="#555"/><rect x="68" y="44" width="24" height="14" fill="#d8c4a0"/>`);
-const iconTester = () => icon("테스터 LED", `<rect x="16" y="24" width="128" height="48" rx="8" fill="#1f2a22" stroke="#5dcc88"/>` + [0,1,2,3,4,5,6,7].map(i=>`<circle cx="${30+i*14}" cy="48" r="5" fill="${i%2?"#5dcc88":"#ffe08a"}"/>`).join(""));
-const iconHang = () => icon("걸이에 반납", `<rect x="20" y="24" width="120" height="12" rx="4" fill="#6b4423"/><rect x="40" y="36" width="16" height="40" fill="#3d5a80"/><rect x="72" y="36" width="16" height="40" fill="#888"/><rect x="104" y="36" width="16" height="40" fill="#555"/>`);
-
+const iconTester = () => icon("테스터", `<rect x="16" y="24" width="128" height="48" rx="8" fill="#1f2a22" stroke="#5dcc88"/>` + [0,1,2,3,4,5,6,7].map(i=>`<circle cx="${30+i*14}" cy="48" r="5" fill="${i%2?"#5dcc88":"#ffe08a"}"/>`).join(""));
+const iconHang = () => icon("걸이에 반납", `<rect x="20" y="24" width="120" height="12" rx="4" fill="#6b4423"/><rect x="40" y="36" width="16" height="40" fill="#3d5a80"/>`);
 const ART = {
   welcome: () => `<div class="art-row">${iconReel()}${iconCutter()}</div>`,
   reel: iconReel, cutter: iconCutter, stripper: iconStripper, hang: iconHang,
@@ -176,13 +222,9 @@ const ART = {
 
 export function buildManual() {
   qs("#manual-pages").innerHTML = `
-    <article class="man-card">${iconReel()}<h3>UTP가 뭔가요?</h3><p>꼬인 네 쌍이 간섭을 줄여 줘요. 각 페어는 색 + 흰줄 두 가닥입니다.</p></article>
-    <article class="man-card"><div class="cat-legend">${Object.values(CATS).map((c) => `<span class="cat-pill" style="background:${c.jacketHex}">${c.name}<small>${c.speed}</small></span>`).join("")}</div><h3>카테고리</h3><p>숫자가 클수록 빠르고 재킷이 굵어요. 교실은 Cat5e부터.</p></article>
-    <article class="man-card">${iconInsert()}<h3>핀 번호와 플러그 방향</h3><p>탭을 <b>아래</b>로. 앞에서 보면 <b>왼쪽 1번 · 오른쪽 8번</b>.</p></article>
-    <article class="man-card wide"><div class="std-pair">${plugPins(T568B, "T568B")}${plugPins(T568A, "T568A")}</div><h3>T568B / T568A</h3><p>차이는 주황·녹 페어 자리뿐. 학교는 보통 B.</p></article>
-    <article class="man-card wide"><div class="std-pair">${twoPlugs(false)}${twoPlugs(true)}</div><h3>스트레이트 vs 크로스오버</h3><p>같은 표준은 스트레이트. A+B는 크로스. 요즘은 Auto MDI-X라 스트레이트가 기본.</p></article>
-    <article class="man-card wide"><h3>자주 하는 실수</h3><div class="mistake-grid">${COMMON_MISTAKES.map((m) => `<div class="mistake-card"><strong>${m.title}</strong><p>${m.text}</p></div>`).join("")}</div></article>
-    <article class="man-card">${iconHang()}<h3>공구 예절</h3><p>쓰고 바로 걸이. 안 돌리면 감점돼요.</p></article>`;
+    <article class="man-card">${iconReel()}<h3>UTP가 뭔가요?</h3><p>꼬인 네 쌍이 간섭을 줄여 줘요.</p></article>
+    <article class="man-card wide"><div class="std-pair">${plugPins(T568B, "T568B")}${plugPins(T568A, "T568A")}</div><h3>T568B / T568A</h3><p>이 의뢰는 양끝 T568B 스트레이트.</p></article>
+    <article class="man-card">${iconHang()}<h3>공구 예절</h3><p>쓰고 바로 걸이.</p></article>`;
 }
 
 export function buildDiagramSheet() {
