@@ -40,18 +40,17 @@ const TOOL_SVG = {
     </svg>`,
   stripper: `
     <svg class="tool-svg" viewBox="0 0 120 88" aria-hidden="true">
-      <path d="M64 48 L102 76 Q106 80 100 83 L58 56 Z" fill="#2c2c28" stroke="#1a1b14" stroke-width="2"/>
-      <path d="M56 50 L36 84 Q32 88 38 87 L66 56 Z" fill="#2d3d55" stroke="#1a1b14" stroke-width="2"/>
-      <path d="M52 60 L40 80" stroke="#7a90b0" stroke-width="2.4" stroke-linecap="round" opacity=".45"/>
-      <path d="M14 12 h62 l-8 40 H22 Z" fill="#c9a227" stroke="#1a1b14" stroke-width="2"/>
-      <path d="M20 16 h50 l-4 16 H24 Z" fill="#e0c04a" stroke="#1a1b14" stroke-width="1.3"/>
-      <circle cx="30" cy="24" r="7.2" fill="#2a2b22" stroke="#1a1b14" stroke-width="1.7"/>
-      <circle cx="46" cy="24" r="5.2" fill="#2a2b22" stroke="#1a1b14" stroke-width="1.7"/>
-      <circle cx="59" cy="24" r="3.3" fill="#2a2b22" stroke="#1a1b14" stroke-width="1.5"/>
-      <path d="M24 40 h26 l-3 8 H27 Z" fill="#6e7064" stroke="#1a1b14" stroke-width="1.3"/>
-      <path d="M28 42 h16" stroke="#c5ccd2" stroke-width="1.6"/>
-      <circle cx="58" cy="50" r="7.2" fill="#c9b888" stroke="#1a1b14" stroke-width="2"/>
-      <circle cx="58" cy="50" r="2.8" fill="#6e7064"/>
+      <path d="M64 48 L104 78 Q108 82 101 85 L56 54 Z" fill="#2c2c28" stroke="#1a1b14" stroke-width="2"/>
+      <path d="M54 48 L26 84 Q22 88 29 87 L62 52 Z" fill="#d4a017" stroke="#1a1b14" stroke-width="2"/>
+      <path d="M50 58 L34 80" stroke="#f0d48a" stroke-width="2.5" stroke-linecap="round" opacity=".45"/>
+      <path d="M8 12 L70 16 L64 38 L14 42 Z" fill="#8b9298" stroke="#1a1b14" stroke-width="2"/>
+      <path d="M14 16 L64 19 L60 32 L18 36 Z" fill="#c5ccd2" stroke="#1a1b14" stroke-width="1.2"/>
+      <circle cx="26" cy="26" r="6.6" fill="#2a2b22" stroke="#1a1b14" stroke-width="1.6"/>
+      <circle cx="42" cy="26" r="4.8" fill="#2a2b22" stroke="#1a1b14" stroke-width="1.6"/>
+      <circle cx="54" cy="26" r="3.2" fill="#2a2b22" stroke="#1a1b14" stroke-width="1.5"/>
+      <path d="M18 38 L48 36 L46 44 L16 44 Z" fill="#6e7064" stroke="#1a1b14" stroke-width="1.3"/>
+      <circle cx="58" cy="48" r="7.2" fill="#c9b888" stroke="#1a1b14" stroke-width="2"/>
+      <circle cx="58" cy="48" r="2.8" fill="#6e7064"/>
     </svg>`,
   crimper: `
     <svg class="tool-svg" viewBox="0 0 120 88" aria-hidden="true">
