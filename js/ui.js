@@ -124,7 +124,9 @@ export function stamp(kind, title, reason) {
     `;
     el.classList.remove("hidden");
     const done = () => {
-      el.classList.add("hidden");
+      clearTimeout(stamp._tm);
+      el.className = "stamp-layer hidden";
+      el.innerHTML = "";
       el.onclick = null;
       resolve();
     };

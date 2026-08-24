@@ -3,7 +3,7 @@ import {
   endOf, isT568B, allPairsUntwisted, allWiresStraight, allSlotsFilled,
 } from "./state.js";
 import {
-  bindDrag, bindHold, bindPickDrag, place, clamp, hits,
+  bindDrag, bindHold, bindPickDrag, place, clamp, hits, centerDist,
 } from "./drag.js";
 import { qs, wireStyle } from "./ui.js";
 
@@ -206,14 +206,21 @@ function cut(root, api, add) {
     place(cutter, 12, Math.max(100, canvas.clientHeight - 72));
   });
 
+  function pullTo(ev) {
+    unspool = clientToM(ev.clientX);
+    paint();
+    checkCutter();
+  }
   add(bindDrag(tip, {
     container: track,
     axis: "x",
-    onMove(x, _y, ev) {
-      unspool = clientToM(ev.clientX);
-      paint();
-      checkCutter();
-    },
+    onMove(_x, _y, ev) { pullTo(ev); },
+    onEnd: checkCutter,
+  }));
+  add(bindDrag(body, {
+    container: track,
+    axis: "x",
+    onMove(_x, _y, ev) { pullTo(ev); },
     onEnd: checkCutter,
   }));
   add(bindDrag(cutter, {
@@ -277,19 +284,19 @@ function strip(root, api, add) {
     jacket.style.left = `${bladeX}px`;
     jacket.style.top = `${tr.top - cr.top + 36}px`;
     jacket.style.width = `${Math.max(16, w - w * t)}px`;
-    stripper.style.left = `${clamp(bladeX - 20, 0, canvas.clientWidth - 70)}px`;
+    stripper.style.left = `${clamp(bladeX - 24, 0, canvas.clientWidth - 84)}px`;
+    stripper.style.top = `${tr.top - cr.top + 8}px`;
     read.textContent = `끝 ${which} · 칼날 ${depth.toFixed(1)} cm  · 띠에 맞춘 뒤 재킷을 벗기시오`;
   }
 
   requestAnimationFrame(() => {
-    place(stripper, Math.max(12, canvas.clientWidth - 90), Math.max(100, canvas.clientHeight - 80));
     paint();
   });
 
   add(bindDrag(stripper, {
     container: canvas,
     onMove(x, y, ev) {
-      place(stripper, clamp(x, 0, canvas.clientWidth - 70), clamp(y, 0, canvas.clientHeight - 58));
+      place(stripper, clamp(x, 0, canvas.clientWidth - 84), clamp(y, 0, canvas.clientHeight - 64));
       depth = clientToCm(ev.clientX);
       paint();
     },
@@ -344,7 +351,7 @@ function untwist(root, api, add) {
         if (!end.pairs[i]) bindFlick(card, () => {
           end.pairs[i] = true;
           paint();
-        }, add, api);
+        }, add, api, 36);
       });
       return;
     }
@@ -361,7 +368,7 @@ function untwist(root, api, add) {
       if (!end.wires[i]) bindFlick(card, () => {
         end.wires[i] = true;
         paint();
-      }, add, api, 56);
+      }, add, api, 36);
     });
     if (allWiresStraight(end)) {
       api.primary("색 정렬로", () => api.go("sort"));
@@ -474,10 +481,10 @@ function boot(root, api, add) {
   add(bindDrag(bootEl, {
     container: row,
     onMove(x, y) {
-      place(bootEl, clamp(x, 0, row.clientWidth - 70), clamp(y, 0, row.clientHeight - 40));
+      place(bootEl, clamp(x, 0, row.clientWidth - 84), clamp(y, 0, row.clientHeight - 48));
     },
     onEnd() {
-      if (hits(bootEl, cable, 0.18)) {
+      if (hits(bootEl, cable, 0.04) || centerDist(bootEl, cable) < 150) {
         end.bootOn = true;
         bootEl.style.left = `${cable.offsetLeft + cable.offsetWidth - 36}px`;
         bootEl.style.top = `${cable.offsetTop - 8}px`;
@@ -525,15 +532,17 @@ function insert(root, api, add) {
     });
   }
 
+  function seated() {
+    return hits(bundle, plug, 0.04) || centerDist(bundle, plug) < 140;
+  }
   add(bindDrag(bundle, {
     container: row,
     onMove(x, y) {
       place(bundle, clamp(x, 0, row.clientWidth - 80), clamp(y, 0, row.clientHeight - 36));
-      const near = hits(bundle, plug, 0.12);
-      showEmerge(near);
+      showEmerge(seated());
     },
     onEnd() {
-      if (hits(bundle, plug, 0.2)) {
+      if (seated()) {
         end.inserted = true;
         const pr = plug.getBoundingClientRect();
         const rr = row.getBoundingClientRect();
@@ -571,7 +580,7 @@ function inspect(root, api, add) {
     row.appendChild(el(`
       <div class="hole">
         <div class="circ" style="${wireStyle(id)}"></div>
-        ${i + 1}<br>${w.short}
+        ${i + 1} ${w.short}<br>${w.name}
       </div>
     `));
   });
@@ -608,7 +617,7 @@ function crimp(root, api, add) {
   requestAnimationFrame(() => place(crimper, row.clientWidth - 120, 16));
 
   function seatCheck() {
-    seated = hits(crimper, plug, 0.2);
+    seated = hits(crimper, plug, 0.05) || centerDist(crimper, plug) < 130;
     meter.classList.toggle("hidden", !seated);
     if (seated) api.toast("크림퍼를 쥐고 있으세요.");
   }

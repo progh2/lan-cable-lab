@@ -263,6 +263,7 @@ button.ok { background: #2d4a2d; }
   bottom: 110px;
   transform: translateX(-50%);
   z-index: 40;
+  pointer-events: none;
   background: var(--paper);
   color: var(--ink);
   font-weight: 800;
@@ -529,11 +530,11 @@ button.ok { background: #2d4a2d; }
   touch-action: none;
 }
 .cable-tip {
-  width: 28px;
-  height: 36px;
+  width: 36px;
+  height: 40px;
   background: var(--copper);
   border: 2px solid #1a1b14;
-  top: 28px;
+  top: 34px;
 }
 .cutter.tool {
   width: 76px;
@@ -565,8 +566,8 @@ button.ok { background: #2d4a2d; }
   border: 2px solid #1a1b14;
 }
 .stripper.tool {
-  width: 70px;
-  height: 58px;
+  width: 84px;
+  height: 64px;
   background: #2d3d55;
   border: 2px solid #1a1b14;
   color: #eef4ff;
@@ -683,15 +684,15 @@ button.ok { background: #2d4a2d; }
 .cable-horiz {
   position: absolute;
   left: 8px;
-  top: 42%;
-  width: 46%;
-  height: 26px;
+  top: 38%;
+  width: 52%;
+  height: 40px;
   background: #3f5a3c;
   border: 2px solid #1a1b14;
 }
 .boot {
-  width: 70px;
-  height: 40px;
+  width: 84px;
+  height: 48px;
   background: #245024;
   border: 2px solid #1a1b14;
   color: #e8ffe8;
