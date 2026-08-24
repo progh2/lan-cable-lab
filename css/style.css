@@ -525,7 +525,7 @@ button.ok { background: #2d4a2d; }
   border-radius: 4px;
   min-width: 24px;
 }
-.cable-tip, .tool, .jacket-peel, .bundle, .boot, .crimper {
+.cable-tip, .tool, .jacket-peel, .bundle, .boot {
   position: absolute;
   touch-action: none;
 }
@@ -536,17 +536,40 @@ button.ok { background: #2d4a2d; }
   border: 2px solid #1a1b14;
   top: 34px;
 }
-.cutter.tool {
-  width: 76px;
-  height: 64px;
-  background: #6a2a22;
-  border: 2px solid #1a1b14;
-  color: #fff4ea;
-  font-weight: 800;
+.tool {
+  width: 92px;
+  min-height: 80px;
+  background: transparent;
+  border: 0;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  font-size: 0.85rem;
+  justify-content: flex-end;
+  color: #efe6cf;
+  font-weight: 800;
+  z-index: 5;
+  cursor: grab;
+}
+.tool-svg {
+  width: 88px;
+  height: 64px;
+  display: block;
+  pointer-events: none;
+  filter: drop-shadow(1px 2px 0 #111);
+}
+.crimper.tool {
+  width: 100px;
+}
+.crimper .tool-svg {
+  width: 96px;
+  height: 70px;
+}
+.tool-label {
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  line-height: 1.1;
+  margin-top: 2px;
+  text-shadow: 0 1px 0 #111;
 }
 .length-read, .depth-read {
   position: relative;
@@ -565,20 +588,6 @@ button.ok { background: #2d4a2d; }
   background: #3f5a3c;
   border: 2px solid #1a1b14;
 }
-.stripper.tool {
-  width: 84px;
-  height: 64px;
-  background: #2d3d55;
-  border: 2px solid #1a1b14;
-  color: #eef4ff;
-  font-weight: 800;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.8rem;
-  text-align: center;
-  line-height: 1.15;
-}
 .jacket-peel {
   height: 40px;
   background: #3f5a3c;
@@ -592,37 +601,56 @@ button.ok { background: #2d4a2d; }
   color: #e8f0dc;
   z-index: 4;
 }
-.tool { z-index: 5; }
 .depth-read { color: #f0d48a; }
 
-/* untwist */
+/* untwist — compact 4-pair / 8-wire grid; never clip without scroll */
+.stage:has(.pairs),
+.stage:has(.straights) {
+  overflow: auto;
+  touch-action: pan-y;
+}
 .pairs, .straights {
   display: grid;
-  gap: 8px;
-  padding: 8px;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding: 4px;
   height: 100%;
   align-content: start;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
 }
 .pair, .straight-wire {
-  min-height: 58px;
+  min-height: 40px;
   border: 2px solid #1a1b14;
   display: flex;
   align-items: center;
-  padding: 6px 10px;
-  gap: 8px;
+  padding: 4px 6px;
+  gap: 6px;
   font-weight: 800;
+  font-size: 0.76rem;
+  line-height: 1.2;
   background: #3d3f34;
 }
+.pair span, .straight-wire span { min-width: 0; }
 .pair.done, .straight-wire.done { outline: 2px solid #8ccc7a; }
 .twist {
-  width: 88px;
-  height: 22px;
+  width: 52px;
+  height: 10px;
+  flex-shrink: 0;
   background:
-    repeating-linear-gradient(105deg, var(--a) 0 8px, var(--b) 8px 16px);
+    repeating-linear-gradient(105deg, var(--a) 0 5px, var(--b) 5px 10px);
   border: 1px solid #111;
 }
 .pair.done .twist {
   background: linear-gradient(90deg, var(--a) 50%, var(--b) 50%);
+}
+.strand {
+  width: 48px;
+  height: 8px;
+  flex-shrink: 0;
+  border: 1px solid #111;
+  display: block;
 }
 
 /* sort */
@@ -811,19 +839,6 @@ button.ok { background: #2d4a2d; }
 }
 
 /* crimp */
-.crimper {
-  width: 100px;
-  height: 72px;
-  background: #2c3e50;
-  border: 2px solid #1a1b14;
-  color: #eef4ff;
-  font-weight: 800;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  font-size: 0.82rem;
-}
 .hold-meter {
   position: absolute;
   left: 10px;
@@ -864,6 +879,7 @@ button.ok { background: #2d4a2d; }
 
 @media (min-width: 720px) {
   .rack { grid-template-columns: repeat(4, 1fr); height: calc(100% - 80px); }
+  .pairs, .straights { grid-template-columns: repeat(4, 1fr); }
   .slots {
     flex-direction: row;
     align-items: stretch;
@@ -882,4 +898,12 @@ button.ok { background: #2d4a2d; }
   .ticket-job { font-size: 0.86rem; }
   .booth h1 { font-size: 0.92rem; }
   #prompt { font-size: 0.92rem; }
+  .pair, .straight-wire { min-height: 38px; font-size: 0.72rem; padding: 3px 5px; }
+  .twist { width: 44px; height: 8px; }
+  .strand { width: 40px; height: 7px; }
+}
+
+@media (max-height: 720px) {
+  .pair, .straight-wire { min-height: 36px; }
+  .pairs, .straights { gap: 5px; }
 }

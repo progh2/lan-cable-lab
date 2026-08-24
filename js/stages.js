@@ -13,6 +13,68 @@ function el(html) {
   return d.firstElementChild;
 }
 
+function toolMarkup(kind, label) {
+  return `<div class="${kind} tool" id="${kind}" role="img" aria-label="${label}">${TOOL_SVG[kind]}<span class="tool-label">${label}</span></div>`;
+}
+
+function clampTool(node, x, y, box) {
+  return [
+    clamp(x, 0, Math.max(0, box.clientWidth - node.offsetWidth)),
+    clamp(y, 0, Math.max(0, box.clientHeight - node.offsetHeight)),
+  ];
+}
+
+/** Flat 2D silhouettes — diagonal cutter, jacket stripper, RJ45 crimp tool. */
+const TOOL_SVG = {
+  cutter: `
+    <svg class="tool-svg" viewBox="0 0 120 88" aria-hidden="true">
+      <path d="M58 42 L100 76 Q104 81 97 83 L52 50 Z" fill="#2c2c28" stroke="#1a1b14" stroke-width="2"/>
+      <path d="M66 52 L94 74" stroke="#5a5a52" stroke-width="3" stroke-linecap="round" opacity=".4"/>
+      <path d="M50 44 L24 82 Q20 87 27 86 L58 50 Z" fill="#9c1f1f" stroke="#1a1b14" stroke-width="2"/>
+      <path d="M46 56 L30 80" stroke="#d46a5a" stroke-width="2.6" stroke-linecap="round" opacity=".45"/>
+      <path d="M52 42 L12 20 L6 27 L20 34 L50 48 Z" fill="#8b9298" stroke="#1a1b14" stroke-width="2"/>
+      <path d="M56 36 L20 8 L10 16 L48 42 Z" fill="#c5ccd2" stroke="#1a1b14" stroke-width="2"/>
+      <path d="M18 14 L50 40" stroke="#eef1f3" stroke-width="1.3"/>
+      <circle cx="54" cy="44" r="7.2" fill="#c9b888" stroke="#1a1b14" stroke-width="2"/>
+      <circle cx="54" cy="44" r="2.8" fill="#6e7064"/>
+    </svg>`,
+  stripper: `
+    <svg class="tool-svg" viewBox="0 0 120 88" aria-hidden="true">
+      <path d="M64 48 L104 78 Q108 82 101 85 L56 54 Z" fill="#2c2c28" stroke="#1a1b14" stroke-width="2"/>
+      <path d="M54 48 L26 84 Q22 88 29 87 L62 52 Z" fill="#d4a017" stroke="#1a1b14" stroke-width="2"/>
+      <path d="M50 58 L34 80" stroke="#f0d48a" stroke-width="2.5" stroke-linecap="round" opacity=".45"/>
+      <path d="M8 12 L70 16 L64 38 L14 42 Z" fill="#8b9298" stroke="#1a1b14" stroke-width="2"/>
+      <path d="M14 16 L64 19 L60 32 L18 36 Z" fill="#c5ccd2" stroke="#1a1b14" stroke-width="1.2"/>
+      <circle cx="26" cy="26" r="6.6" fill="#2a2b22" stroke="#1a1b14" stroke-width="1.6"/>
+      <circle cx="42" cy="26" r="4.8" fill="#2a2b22" stroke="#1a1b14" stroke-width="1.6"/>
+      <circle cx="54" cy="26" r="3.2" fill="#2a2b22" stroke="#1a1b14" stroke-width="1.5"/>
+      <path d="M18 38 L48 36 L46 44 L16 44 Z" fill="#6e7064" stroke="#1a1b14" stroke-width="1.3"/>
+      <circle cx="58" cy="48" r="7.2" fill="#c9b888" stroke="#1a1b14" stroke-width="2"/>
+      <circle cx="58" cy="48" r="2.8" fill="#6e7064"/>
+    </svg>`,
+  crimper: `
+    <svg class="tool-svg" viewBox="0 0 120 88" aria-hidden="true">
+      <path d="M58 50 L112 74 Q116 78 110 82 L52 58 Z" fill="#2c2c28" stroke="#1a1b14" stroke-width="2"/>
+      <path d="M50 52 L78 86 Q73 90 67 87 L42 56 Z" fill="#9c1f1f" stroke="#1a1b14" stroke-width="2"/>
+      <path d="M8 10 L54 6 L72 20 L68 48 L18 50 L6 36 Z" fill="#7d868e" stroke="#1a1b14" stroke-width="2"/>
+      <path d="M14 14 L52 11 L64 20 L62 28 L16 30 Z" fill="#c5ccd2" stroke="#1a1b14" stroke-width="1.2"/>
+      <path d="M20 18 L58 16 L60 34 L22 36 Z" fill="#2a2b22" stroke="#1a1b14" stroke-width="1.6"/>
+      <g fill="#c9a227">
+        <rect x="24" y="20" width="2.5" height="11"/>
+        <rect x="28.6" y="20" width="2.5" height="11"/>
+        <rect x="33.2" y="20" width="2.5" height="11"/>
+        <rect x="37.8" y="20" width="2.5" height="11"/>
+        <rect x="42.4" y="20" width="2.5" height="11"/>
+        <rect x="47" y="20" width="2.5" height="11"/>
+        <rect x="51.6" y="20" width="2.5" height="11"/>
+      </g>
+      <path d="M28 44 L62 42 L60 54 L26 54 Z" fill="#5a6268" stroke="#1a1b14" stroke-width="1.6"/>
+      <path d="M32 48 h22" stroke="#c9b888" stroke-width="2"/>
+      <circle cx="52" cy="54" r="7.2" fill="#c9b888" stroke="#1a1b14" stroke-width="2"/>
+      <circle cx="52" cy="54" r="2.8" fill="#6e7064"/>
+    </svg>`,
+};
+
 function ticks(host, items) {
   host.innerHTML = items.map(([pct, label, major]) =>
     `<i class="tick ${major ? "major" : ""}" style="left:${pct}%">${label ? `<span>${label}</span>` : ""}</i>`
@@ -129,7 +191,7 @@ function cut(root, api, add) {
         <div class="cable-body" id="body"></div>
         <div class="cable-tip" id="tip"></div>
       </div>
-      <div class="cutter tool" id="cutter">커터</div>
+      ${toolMarkup("cutter", "커터")}
     </div>
   `);
   root.appendChild(box);
@@ -203,7 +265,7 @@ function cut(root, api, add) {
 
   requestAnimationFrame(() => {
     paint();
-    place(cutter, 12, Math.max(100, canvas.clientHeight - 72));
+    place(cutter, 12, Math.max(100, canvas.clientHeight - cutter.offsetHeight - 4));
   });
 
   function pullTo(ev) {
@@ -226,7 +288,7 @@ function cut(root, api, add) {
   add(bindDrag(cutter, {
     container: canvas,
     onMove(x, y) {
-      place(cutter, clamp(x, 0, canvas.clientWidth - 76), clamp(y, 0, canvas.clientHeight - 64));
+      place(cutter, ...clampTool(cutter, x, y, canvas));
       checkCutter();
     },
     onEnd: checkCutter,
@@ -247,7 +309,7 @@ function strip(root, api, add) {
         <div class="strip-cable" id="cable"></div>
       </div>
       <div class="jacket-peel" id="jacket">재킷 · 잡아 벗기기</div>
-      <div class="stripper tool" id="stripper">스트리퍼</div>
+      ${toolMarkup("stripper", "스트리퍼")}
     </div>
   `);
   root.appendChild(box);
@@ -284,7 +346,7 @@ function strip(root, api, add) {
     jacket.style.left = `${bladeX}px`;
     jacket.style.top = `${tr.top - cr.top + 36}px`;
     jacket.style.width = `${Math.max(16, w - w * t)}px`;
-    stripper.style.left = `${clamp(bladeX - 24, 0, canvas.clientWidth - 84)}px`;
+    stripper.style.left = `${clamp(bladeX - 24, 0, canvas.clientWidth - stripper.offsetWidth)}px`;
     stripper.style.top = `${tr.top - cr.top + 8}px`;
     read.textContent = `끝 ${which} · 칼날 ${depth.toFixed(1)} cm  · 띠에 맞춘 뒤 재킷을 벗기시오`;
   }
@@ -296,7 +358,7 @@ function strip(root, api, add) {
   add(bindDrag(stripper, {
     container: canvas,
     onMove(x, y, ev) {
-      place(stripper, clamp(x, 0, canvas.clientWidth - 84), clamp(y, 0, canvas.clientHeight - 64));
+      place(stripper, ...clampTool(stripper, x, y, canvas));
       depth = clientToCm(ev.clientX);
       paint();
     },
@@ -343,7 +405,7 @@ function untwist(root, api, add) {
         const b = WIRES[p.ids[1]];
         const card = el(`
           <div class="pair ${end.pairs[i] ? "done" : ""}" data-i="${i}">
-            <div class="twist" style="--a:${a.hex};--b:${b.hex}"></div>
+            <i class="twist" style="--a:${a.hex};--b:${b.hex}"></i>
             <span>${p.name}${end.pairs[i] ? " · 풀림" : " · 끌어 풀기"}</span>
           </div>
         `);
@@ -360,8 +422,9 @@ function untwist(root, api, add) {
     T568B.forEach((id, i) => {
       const w = WIRES[id];
       const card = el(`
-        <div class="straight-wire ${end.wires[i] ? "done" : ""}" data-i="${i}" style="${wireStyle(id)}">
-          ${w.name}${end.wires[i] ? " · 펴짐" : " · 잡아 펴기"}
+        <div class="straight-wire ${end.wires[i] ? "done" : ""}" data-i="${i}">
+          <i class="strand" style="${wireStyle(id)}"></i>
+          <span>${w.name}${end.wires[i] ? " · 펴짐" : " · 잡아 펴기"}</span>
         </div>
       `);
       host.appendChild(card);
@@ -601,7 +664,7 @@ function crimp(root, api, add) {
           <div style="padding:6px;font-size:0.75rem;font-weight:800">여분 돌출</div>
           <div class="emerge" style="right:-10px">${end.slots.map((id) => `<i style="${wireStyle(id)}"></i>`).join("")}</div>
         </div>
-        <div class="crimper" id="crimper">크림퍼</div>
+        ${toolMarkup("crimper", "크림퍼")}
         <div class="hold-meter hidden" id="meter"><i></i></div>
       </div>
     </div>
@@ -614,7 +677,7 @@ function crimp(root, api, add) {
   const bar = qs("i", meter);
   let seated = false;
 
-  requestAnimationFrame(() => place(crimper, row.clientWidth - 120, 16));
+  requestAnimationFrame(() => place(crimper, Math.max(8, row.clientWidth - crimper.offsetWidth - 8), 12));
 
   function seatCheck() {
     seated = hits(crimper, plug, 0.05) || centerDist(crimper, plug) < 130;
@@ -625,7 +688,7 @@ function crimp(root, api, add) {
   add(bindDrag(crimper, {
     container: row,
     onMove(x, y) {
-      place(crimper, clamp(x, 0, row.clientWidth - 100), clamp(y, 0, row.clientHeight - 72));
+      place(crimper, ...clampTool(crimper, x, y, row));
     },
     onEnd: seatCheck,
   }));
