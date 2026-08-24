@@ -20,7 +20,7 @@ export const CATS = {
     thickness: 0.062,
     hasSeparator: true,
     speed: "1~10 Gbps / 250 MHz",
-    use: "십자 분리대(separator)가 있어 간섭이 적습니다. 서버실·핵심 구간에 쓰니다.",
+    use: "십자 분리대(separator)가 있어 간섭이 적습니다. 서버실·핵심 구간에 쓹니다.",
     unlocked: true,
   },
   cat6a: {
@@ -85,7 +85,7 @@ export const JOB_CHECKS = [
   { id: "arrangeA", label: "끝 A T568B 정렬" },
   { id: "trimA", label: "끝 A 트림" },
   { id: "crimpA", label: "끝 A RJ45 압착" },
-  { id: "endB", label: "반대쪽도 동일히 T568B" },
+  { id: "endB", label: "반대쪽도 땱같이 T568B" },
   { id: "stripB", label: "끝 B 재킷 벗기기" },
   { id: "crimpB", label: "끝 B 압착" },
   { id: "test", label: "테스터로 확인" },
@@ -115,7 +115,7 @@ export const COACH = {
   take_crimper: step("크림퍼로 한 번에 압착하세요.", "crimp"),
   crimp: step("크림퍼로 한 번에 힘 있게 압착하세요.", "crimp"),
   return_crimper: step("크림퍼를 걸이에 거세요.", "hang"),
-  flip_end: step("반대쪽도 동일히 T568B로 만드세요.", "crossover"),
+  flip_end: step("반대쪽도 땱같이 T568B로 만드세요.", "crossover"),
   done_both: step("테스터로 8가닥이 이어졌는지 확인하세요.", "tester"),
   take_tester: step("테스터로 양 끝을 확인하세요.", "tester"),
   test: step("테스터로 1부터 8까지 켜지는지 보세요.", "tester"),
@@ -124,10 +124,10 @@ export const COACH = {
 };
 
 export const COMMON_MISTAKES = [
-  { id: "deep", title: "탈피가 너무 깊음", text: "페어가 길게 풀리면 누화가 커줘요." },
+  { id: "deep", title: "탈피가 너무 깊음", text: "페어가 길게 풀리면 누화가 커져요." },
   { id: "swap36", title: "3·6번 바꿈", text: "녹/주황 페어를 바꾸면 테스터가 어귳나요." },
   { id: "accidental-x", title: "의도치 않은 크로스", text: "양 끝을 다른 표준으로 만들면 크로스가 됩니다." },
   { id: "tab", title: "탭을 뒤집음", text: "탭이 위면 1번이 반대로 가요." },
-  { id: "uneven", title: "트림이 들쪥날쪹", text: "짧은 가닥은 핀이 안 닿아 LED가 께줘요." },
+  { id: "uneven", title: "트림이 들쪽날쪽", text: "짧은 가닥은 핀이 안 닿아 LED가 께줘요." },
   { id: "tools", title: "공구를 두고 감", text: "다음 조를 위해 걸이에 걸어 주세요." },
 ];
