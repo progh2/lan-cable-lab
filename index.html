@@ -18,38 +18,35 @@
   <div id="app">
     <header>
       <h1>미림마이스터고 · 랜선 제작 실습</h1>
-      <span class="sub">큰 버튼으로 만들고, 공구는 걸이에</span>
+      <span class="sub">수첩만 보고, 큰 버튼 하나로</span>
       <div class="chips">
-        <span class="chip" id="cat-chip">Cat5e</span>
-        <span class="chip" id="len-chip">1m</span>
-        <span class="chip" id="std-chip">끝A T568B</span>
+        <span class="chip ticket" id="job-ticket">의뢰: Cat5e 1m 스트레이트 · 양끝 T568B</span>
         <span class="chip score">점수 <span id="score-val">100</span></span>
+        <span class="chip hidden" id="cat-chip">Cat5e</span>
+        <span class="chip hidden" id="len-chip">1m</span>
+        <span class="chip hidden" id="std-chip">끝A T568B</span>
       </div>
     </header>
 
-    <main id="stage">
-      <canvas id="view"></canvas>
-    </main>
-
-    <nav id="actions" aria-label="엄지 조작"></nav>
-
-    <aside id="coach" aria-live="polite">
-      <p class="chip" id="end-badge">끝 A (한쪽)</p>
-      <div id="step-art" class="step-art" aria-hidden="true"></div>
-      <h2 id="coach-title">코치</h2>
-      <p id="coach-body"></p>
-      <p id="coach-hint"></p>
-      <div class="btn-row">
-        <button type="button" id="btn-start">시작하기</button>
-        <button type="button" class="secondary" id="btn-manual">실습 매뉴얼</button>
-        <button type="button" class="ghost" id="btn-diagram">배선표</button>
-        <button type="button" class="ghost" id="btn-retry">이 단계 다시</button>
-        <button type="button" class="ghost" id="btn-restart">새 케이블</button>
+    <aside id="notebook" aria-live="polite">
+      <div class="nb-tabs" role="tablist">
+        <button type="button" class="nb-tab on" id="tab-now">수첩</button>
+        <button type="button" class="nb-tab" id="btn-manual" title="실습 매뉴얼">매뉴얼</button>
+        <button type="button" class="nb-tab" id="btn-diagram" title="배선표">배선표</button>
+        <button type="button" class="nb-tab ghost" id="btn-retry">다시</button>
+        <button type="button" class="nb-tab ghost" id="btn-restart">새 의뢰</button>
       </div>
-
-      <div id="cat-chips" class="cat-chips"></div>
-      <div id="tool-tiles" class="tool-tiles"></div>
-
+      <p class="job-ticket" id="job-ticket-nb">의뢰: Cat5e 1m 스트레이트 · 양끝 T568B</p>
+      <p class="end-badge" id="end-badge">끝 A</p>
+      <h2 id="coach-title">지금 할 일</h2>
+      <p id="coach-body"></p>
+      <div id="step-art" class="step-art" aria-hidden="true"></div>
+      <p id="coach-hint" class="hidden"></p>
+      <ul id="check-steps" class="nb-list"></ul>
+      <button type="button" id="btn-primary" class="primary">시작하기</button>
+      <button type="button" id="btn-start" class="hidden">시작하기</button>
+      <div id="cat-chips" class="cat-chips hidden"></div>
+      <div id="tool-tiles" class="tool-tiles hidden"></div>
       <div id="panel-len" class="panel hidden">
         <h3>길이</h3>
         <div class="btn-row">
@@ -57,55 +54,42 @@
           <button type="button" data-len="2m">2 m</button>
         </div>
       </div>
-
-      <div id="panel-strip" class="panel hidden">
-        <h3>탈피 깊이</h3>
-        <p>권장 2.0~2.5 cm</p>
+      <details id="panel-strip" class="panel hidden">
+        <summary>깊이 바꾸기 (권장 2.2 cm)</summary>
         <input id="strip-depth" type="range" min="1.0" max="4.0" step="0.1" value="2.2" />
         <p id="strip-val">2.2 cm</p>
         <button type="button" id="strip-go">이 깊이로 벗기기</button>
-      </div>
-
+      </details>
       <div id="panel-arrange" class="panel hidden">
-        <h3>8가닥 배열</h3>
-        <div class="btn-row">
+        <div id="wire-row"></div>
+        <div class="btn-row hidden">
           <button type="button" data-std="B">T568B (학교 기본)</button>
           <button type="button" data-std="A">T568A</button>
-        </div>
-        <div id="wire-row"></div>
-        <div class="btn-row">
           <button type="button" id="btn-auto-order">규격대로 정렬</button>
           <button type="button" class="ghost" id="btn-shuffle-order">일부러 섞기</button>
         </div>
       </div>
-
       <div id="panel-insert" class="panel hidden">
-        <h3>플러그 방향</h3>
-        <p id="tab-state">탭 아래 · 1번 왼쪽 (권장)</p>
-        <button type="button" id="btn-tab">탭 방향 뒤집기</button>
+        <p id="tab-state">탭 아래 · 1번 왼쪽</p>
+        <button type="button" id="btn-tab" class="ghost">탭 방향 뒤집기</button>
       </div>
-
       <div id="panel-flip" class="panel hidden">
-        <h3>반대쪽 끝</h3>
-        <p>같은 표준 = 스트레이트. 다른 표준 = 크로스오버.</p>
-        <button type="button" id="btn-next-end">반대쪽 작업 시작</button>
+        <button type="button" id="btn-next-end">반대쪽도 똑같이 T568B</button>
       </div>
-
       <div id="panel-result" class="panel hidden">
         <h3>테스터 결과</h3>
         <div id="result-box"></div>
       </div>
     </aside>
 
-    <aside id="side">
-      <details id="progress-box">
-        <summary>진행 보기</summary>
-        <h3>진행 체크</h3>
-        <ul id="check-steps"></ul>
-        <h3>공구 걸이</h3>
-        <ul id="check-tools"></ul>
-        <p class="cam-note">데스크톱: 끌어서 회전 · 휠 확대. 단축키 M 매뉴얼, D 배선표, R 시점.</p>
-      </details>
+    <main id="stage">
+      <canvas id="view"></canvas>
+    </main>
+
+    <nav id="actions" aria-label="다음 할 일"></nav>
+
+    <aside id="side" class="hidden">
+      <ul id="check-tools"></ul>
     </aside>
   </div>
 
@@ -120,17 +104,17 @@
     </div>
   </div>
 
-  <div id="diagram" class="hidden pinned" role="dialog" aria-label="배선표">
+  <div id="diagram" class="hidden" role="dialog" aria-label="배선표">
     <div class="sheet">
       <h2>작업대 배선표</h2>
-      <p class="sheet-lead">탭 아래 · 금핀 위 · 왼쪽 1번</p>
-      <h3>T568B (한국 학교)</h3>
+      <p class="sheet-lead">탭 아래 · 금핀 위 · 왼쪽 1번 · 이 의뢰는 양끝 T568B</p>
+      <h3>T568B (이 의뢰)</h3>
       <div id="diag-b"></div>
       <h3>T568A</h3>
       <div id="diag-a"></div>
       <div id="diag-vs"></div>
       <div class="btn-row">
-        <button type="button" id="btn-pin-diagram">떠 있는 용지 고정됨</button>
+        <button type="button" id="btn-pin-diagram">떠 있는 용지</button>
         <button type="button" class="ghost" id="btn-close-diagram">접기</button>
       </div>
     </div>
