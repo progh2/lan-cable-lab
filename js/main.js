@@ -1,12 +1,12 @@
-import { CATS, T568A, T568B, WIRE_DEFS } from "./config.js";
+import { CATS, WIRE_DEFS } from "./config.js";
 import {
   createState, endState, setStep, resetCable, applyOrder, analyzeCable, deduct,
 } from "./state.js";
 import { createWorkshop } from "./workshop.js";
 import {
   bindUI, renderCoach, renderChecklist, renderWires, setPanels, renderResult,
-  showCelebrate, buildManual, buildDiagramSheet, toast, qs, showHoverTip,
-  renderCatChips, renderToolTiles, renderActions,
+  showCelebrate, buildManual, buildDiagramSheet, toast, qs,
+  renderCatChips, renderToolTiles, renderActions, getPrimary,
 } from "./ui.js";
 
 const state = createState();
@@ -18,7 +18,7 @@ buildDiagramSheet();
 bindUI({
   start, toggleManual, toggleDiagram, pinDiagram, pickLen, pickStd,
   autoOrder, shuffleOrder, nextEnd, retry, restart, toggleTab, confirmStrip,
-  pickCat, takeTool, action,
+  pickCat, takeTool, action, primary,
 });
 
 qs("#wire-row").addEventListener("click", (e) => {
@@ -27,47 +27,80 @@ qs("#wire-row").addEventListener("click", (e) => {
   const i = Number(b.dataset.i);
   const end = endState(state);
   if (state.selectedWireIndex === null) {
-    state.selectedWireIndex = i;
-    b.classList.add("sel");
+    state.selectedWireIndex = i; b.classList.add("sel");
     toast(`${i + 1}번을 선택. 바꿀 자리를 다시 누르세요.`);
   } else {
     const j = state.selectedWireIndex;
     const arr = end.order;
     [arr[j], arr[i]] = [arr[i], arr[j]];
     state.selectedWireIndex = null;
-    refresh();
-    workshop.rebuildCable(state);
+    refresh(); workshop.rebuildCable(state);
   }
 });
 
 function start() {
-  if (state.step === "welcome") setStep(state, "pick_cat");
+  state.cat = "cat5e"; state.length = "1m";
+  if (["welcome", "pick_cat", "pick_len"].includes(state.step)) setStep(state, "take_reel");
+  workshop.highlightReels(state.cat);
   refresh();
-  toast("큰 색깔 버튼이나 선반에서 릴을 골라 보세요.");
+  toast("수첩만 보세요. 다음은 Cat5e를 가져오는 일입니다.");
 }
+function primary() { action(getPrimary(state).act); }
 
 function pickCat(cat) {
   if (!CATS[cat]) return;
-  if (state.step === "welcome" || state.step === "pick_cat") {
-    onPick("reel-" + cat, { kind: "reel", cat });
-    return;
-  }
-  if (state.step === "take_reel" && cat === state.cat) {
-    onPick("reel-" + cat, { kind: "reel", cat });
+  state.cat = "cat5e";
+  workshop.highlightReels(state.cat);
+  if (["welcome", "pick_cat", "pick_len", "take_reel"].includes(state.step)) {
+    state.reelOnBench = true; setStep(state, "cut");
+    toast("Cat5e를 작업대에 올렸습니다."); refresh();
   }
 }
 
 function action(act) {
   if (!act) return;
+  if (act === "start") return start();
+  if (act === "restart") return restart();
+  if (act === "arrange") return autoOrder();
+  if (act === "flip") return nextEnd();
+  if (act === "untwist") return doUntwist();
+  if (act === "cut") {
+    if (!state.reelOnBench && !state.cableOnBench) { state.cat = "cat5e"; state.reelOnBench = true; }
+    if (!state.toolsOut.cutter) takeTool("cutter"); else doCut();
+    return;
+  }
+  if (act === "strip") {
+    if (!state.toolsOut.stripper) takeTool("stripper");
+    if (state.step === "take_stripper") setStep(state, "strip");
+    confirmStrip(); return;
+  }
+  if (act === "trim") {
+    if (!state.toolsOut.cutter) takeTool("cutter");
+    doTrim(); return;
+  }
+  if (act === "insert") {
+    if (state.step === "take_plug") takePlug();
+    doInsert(); return;
+  }
+  if (act === "crimp") {
+    if (!endState(state).inserted) {
+      if (state.step === "take_plug") takePlug();
+      doInsert();
+    }
+    if (!state.toolsOut.crimper) takeTool("crimper");
+    doCrimp(); return;
+  }
   if (act.startsWith("reel:")) { pickCat(act.slice(5)); return; }
   if (act.startsWith("tool:")) { takeTool(act.slice(5)); return; }
   if (act === "hang") {
     const name = ["cutter", "stripper", "crimper", "tester"].find((k) => state.toolsOut[k]);
-    if (name) returnTool(name);
-    else toast("나와 있는 공구가 없어요.");
+    if (name) returnTool(name); else toast("나와 있는 공구가 없어요.");
     return;
   }
-  if (act === "test") { doTest(); return; }
+  if (act === "test") {
+    if (!state.toolsOut.tester) takeTool("tester");
+    doTest(); return;
+  }
   if (act === "plug") { takePlug(); return; }
   if (act === "cable") onPick("cable", { kind: "cable" });
 }
@@ -80,54 +113,32 @@ function pinDiagram() {
   qs("#btn-pin-diagram").textContent = state.diagramPinned ? "떠 있는 용지 고정됨" : "작업대 옆에 고정";
 }
 function pickLen(id) {
-  if (state.step !== "pick_len") return;
-  state.length = id;
-  setStep(state, "take_reel");
-  toast(`${id}를 골랐습니다. 같은 릴을 한 번 더 누르거나 ‘선반’ 버튼으로 가져오세요.`);
-  refresh();
+  state.length = "1m"; setStep(state, "take_reel"); refresh();
 }
 function pickStd(std) {
   if (state.step !== "arrange") return;
   applyOrder(endState(state), std);
   endState(state).orderLocked = false;
-  workshop.rebuildCable(state);
-  refresh();
-  toast(`${std === "A" ? "T568A" : "T568B"} 순서로 바꿨습니다.`);
+  workshop.rebuildCable(state); refresh();
 }
 function autoOrder() {
   if (state.step !== "arrange") return;
   const e = endState(state);
-  applyOrder(e, e.standard);
-  e.orderLocked = true;
-  workshop.rebuildCable(state);
-  setStep(state, "take_cutter");
-  toast("규격대로 정렬했습니다. 커터로 끝을 맞추세요.");
-  refresh();
+  applyOrder(e, "B"); e.standard = "B"; e.orderLocked = true;
+  workshop.rebuildCable(state); setStep(state, "take_cutter");
+  toast("T568B 그림대로 정렬했습니다."); refresh();
 }
 function shuffleOrder() {
   if (state.step !== "arrange") return;
-  const e = endState(state);
-  const a = [...e.order];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  e.order = a; e.orderLocked = true;
-  workshop.rebuildCable(state);
-  setStep(state, "take_cutter");
-  toast("일부러 섞었습니다. 테스터에서 실패할 수 있어요.");
-  refresh();
+  autoOrder();
 }
 function nextEnd() {
   if (state.step !== "flip_end") return;
   state.currentEnd = "B";
   const b = state.ends.B;
-  b.standard = state.ends.A.standard;
-  applyOrder(b, b.standard);
-  setStep(state, "take_stripper");
-  workshop.rebuildCable(state);
-  toast("반대쪽입니다. 같은 표준이면 스트레이트, 다르면 크로스.");
-  refresh();
+  b.standard = "B"; applyOrder(b, "B");
+  setStep(state, "take_stripper"); workshop.rebuildCable(state);
+  toast("반대쪽도 똑같이 T568B입니다."); refresh();
 }
 function retry() {
   const e = endState(state);
@@ -138,24 +149,24 @@ function retry() {
     e.inserted = false; e.crimped = false; e.trimmed = false; e.orderLocked = false;
     setStep(state, "arrange"); workshop.rebuildCable(state);
   }
-  qs("#modal-celebrate").classList.add("hidden");
-  refresh();
+  qs("#modal-celebrate").classList.add("hidden"); refresh();
 }
 function restart() {
   Object.keys(state.toolsOut).forEach((k) => {
     if (state.toolsOut[k]) { deduct(state, 5, `${k} 미반납 재시작`); state.toolsLeftOutCount += 1; }
     state.toolsOut[k] = false; workshop.setToolOut(k, false);
   });
-  resetCable(state); state.score = 100; setStep(state, "pick_cat");
+  resetCable(state); state.score = 100; state.cat = "cat5e"; state.length = "1m";
+  setStep(state, "welcome");
   workshop.rebuildCable(state); workshop.setTesterLeds(Array(8).fill("off")); workshop.highlightReels(state.cat);
   qs("#modal-celebrate").classList.add("hidden");
-  toast("새 케이블을 시작합니다."); refresh();
+  toast("새 의뢰를 시작합니다."); refresh();
 }
 function toggleTab() {
   if (state.step !== "insert") return;
   const e = endState(state);
   e.tabDown = !e.tabDown;
-  qs("#tab-state").textContent = e.tabDown ? "탭 아래 · 1번 왼쪽 (권장)" : "탭 위 · 핀 방향 반대 (위험)";
+  qs("#tab-state").textContent = e.tabDown ? "탭 아래 · 1번 왼쪽" : "탭 위 · 위험";
   workshop.rebuildCable(state);
 }
 function confirmStrip() {
@@ -165,23 +176,20 @@ function confirmStrip() {
   e.stripped = true; e.stripDepth = depth; e.stripOk = depth >= 1.8 && depth <= 2.6;
   if (!e.stripOk) {
     state.flags.stripFailHint = true; deduct(state, 8, "탈피 깊이 불량");
-    toast(depth < 1.8 ? "너무 얕아요. 그래도 진행은 할 수 있어요." : "너무 깊어요. 페어가 길게 풀려요.");
-  } else toast("좋은 깊이입니다. 재킷만 벗겨졌어요.");
+    toast(depth < 1.8 ? "너무 얕아요." : "너무 깊어요.");
+  } else toast("좋은 깊이입니다.");
   workshop.rebuildCable(state); setStep(state, "return_stripper"); refresh();
 }
 function onHover(id, data) {
   const tip = qs("#hover-tip");
   if (!id) { tip.classList.add("hidden"); return; }
   let text = "";
-  if (data.kind === "reel") { const c = CATS[data.cat]; text = `${c.name}  ·  ${c.speed}\n${c.use}`; }
-  else if (data.kind === "tool") {
-    const names = { stripper: "스트리퍼", cutter: "커터", crimper: "크림퍼", tester: "테스터" };
-    text = names[data.tool] + (state.toolsOut[data.tool] ? " — 걸이에 클릭" : " — 집기");
-  } else if (data.kind === "plug") text = "RJ45 플러그";
-  else if (data.kind === "boot") text = "부트 — 선택";
-  else if (data.kind === "cable") text = "작업 중인 케이블";
-  else if (data.kind === "wire") text = `${data.index + 1}번 핀`;
-  else if (data.kind === "tester-btn") text = "테스트 시작";
+  if (data.kind === "reel") { const c = CATS[data.cat]; text = `${c.name}  ·  ${c.speed}`; }
+  else if (data.kind === "tool") text = data.tool;
+  else if (data.kind === "plug") text = "RJ45";
+  else if (data.kind === "cable") text = "케이블";
+  else if (data.kind === "wire") text = `${data.index + 1}번`;
+  else if (data.kind === "tester-btn") text = "테스트";
   if (text) { tip.textContent = text; tip.classList.remove("hidden"); }
 }
 function needTool(name) {
@@ -192,7 +200,6 @@ function takeTool(name) {
   if (state.toolsOut[name]) { returnTool(name); return; }
   if (name === "stripper" && state.toolsOut.cutter) { toast("커터를 먼저 걸이에."); return; }
   state.toolsOut[name] = true; workshop.setToolOut(name, true);
-  toast(`${toolLabel(name)}를 작업대로 가져왔습니다.`);
   if (state.step === "cut" && name === "cutter") doCut();
   else if (state.step === "take_stripper" && name === "stripper") setStep(state, "strip");
   else if (state.step === "take_cutter" && name === "cutter") setStep(state, "trim");
@@ -225,24 +232,23 @@ function doUntwist() {
 function doTrim() {
   if (state.step !== "trim" || !needTool("cutter")) return;
   endState(state).trimmed = true; endState(state).orderLocked = true;
-  workshop.rebuildCable(state); setStep(state, "return_cutter"); toast("트림 완료. 커터를 걸이에."); refresh();
+  workshop.rebuildCable(state); setStep(state, "return_cutter"); toast("트림 완료."); refresh();
 }
 function takePlug() {
   if (state.step !== "take_plug") return;
-  endState(state).plugTaken = true; setStep(state, "insert"); toast("플러그. 탭 아래, 1번 왼쪽."); refresh();
+  endState(state).plugTaken = true; setStep(state, "insert"); refresh();
 }
 function doInsert() {
   if (state.step !== "insert") return;
   const e = endState(state);
-  if (!e.plugTaken) { toast("플러그를 먼저 집으세요."); return; }
-  e.inserted = true; workshop.rebuildCable(state); setStep(state, "take_crimper"); toast("삽입 완료."); refresh();
+  if (!e.plugTaken) { toast("플러그를 먼저."); return; }
+  e.inserted = true; workshop.rebuildCable(state); setStep(state, "take_crimper"); refresh();
 }
 function doCrimp() {
   if (state.step !== "crimp" || !needTool("crimper")) return;
   const e = endState(state);
-  if (!e.inserted) { toast("먼저 삽입하세요."); return; }
-  e.crimped = true; workshop.rebuildCable(state); setStep(state, "return_crimper");
-  toast(`${state.currentEnd} 끝 압착. 크림퍼를 걸이에.`); refresh();
+  if (!e.inserted) return;
+  e.crimped = true; workshop.rebuildCable(state); setStep(state, "return_crimper"); refresh();
 }
 function doTest() {
   if (state.step !== "test" || !needTool("tester")) return;
@@ -255,45 +261,31 @@ function doTest() {
   renderResult(result);
   const leftover = Object.values(state.toolsOut).filter(Boolean).length;
   if (!result.pass) deduct(state, 12, "테스터 불합격");
-  if (leftover > 1) deduct(state, leftover * 3, "공구 미반납");
   setTimeout(() => showCelebrate(result, state.score, leftover > 0), 220 * 8);
   setStep(state, "return_tester"); refresh();
 }
 function finishUp() {
-  const leftover = Object.entries(state.toolsOut).filter(([, v]) => v);
-  leftover.forEach(([k]) => { deduct(state, 6, `${k} 미반납`); state.toolsLeftOutCount += 1; });
-  setStep(state, "complete");
-  toast(leftover.length ? "공구가 남아 감점." : "실습 종료!"); refresh();
+  setStep(state, "complete"); toast("의뢰 완료!"); refresh();
 }
 function onPick(id, data) {
   if (data.kind === "reel") {
-    if (state.step === "welcome" || state.step === "pick_cat") {
-      state.cat = data.cat; workshop.highlightReels(state.cat);
-      toast(`${CATS[data.cat].name} — ${CATS[data.cat].speed}`); setStep(state, "pick_len"); refresh(); return;
-    }
-    if (state.step === "take_reel" && data.cat === state.cat) {
-      state.reelOnBench = true; setStep(state, "cut"); toast("릴에서 뺐습니다. 커터로 자르세요."); refresh(); return;
+    if (["welcome", "pick_cat", "pick_len", "take_reel"].includes(state.step)) {
+      state.cat = "cat5e"; state.reelOnBench = true; workshop.highlightReels(state.cat);
+      setStep(state, "cut"); refresh(); return;
     }
     if (state.step === "cut" && state.toolsOut.cutter) { doCut(); return; }
   }
   if (data.kind === "tool") { takeTool(data.tool); return; }
   if (data.kind === "tester-btn") { doTest(); return; }
   if (data.kind === "plug") { takePlug(); return; }
-  if (data.kind === "boot") { toast("부트는 선택 사항이에요."); return; }
   if (data.kind === "cable") {
     if (state.step === "cut") doCut();
-    else if (state.step === "strip") qs("#panel-strip").classList.remove("hidden");
     else if (state.step === "untwist") doUntwist();
     else if (state.step === "trim") doTrim();
     else if (state.step === "insert") doInsert();
     else if (state.step === "crimp") doCrimp();
-    return;
   }
-  if (data.kind === "wire") {
-    if (state.step === "untwist") doUntwist();
-    else if (state.step === "arrange") { const btn = qs("#wire-row").children[data.index]; if (btn) btn.click(); }
-    return;
-  }
+  if (data.kind === "wire" && state.step === "untwist") doUntwist();
   if (data.kind === "plugged") {
     if (state.step === "crimp") doCrimp();
     if (state.step === "insert") doInsert();
@@ -302,11 +294,12 @@ function onPick(id, data) {
 function refresh() {
   renderCoach(state); renderChecklist(state); renderWires(state); setPanels(state);
   renderCatChips(state); renderToolTiles(state); renderActions(state);
-  qs("#cat-chip").textContent = CATS[state.cat].name;
-  qs("#len-chip").textContent = state.length;
-  qs("#std-chip").textContent = `끝${state.currentEnd} ${endState(state).standard === "A" ? "T568A" : "T568B"}`;
+  const cat = qs("#cat-chip"); if (cat) cat.textContent = CATS[state.cat].name;
+  const len = qs("#len-chip"); if (len) len.textContent = state.length;
+  const std = qs("#std-chip"); if (std) std.textContent = `끝${state.currentEnd} T568B`;
   if (state.testResult) renderResult(state.testResult);
-  qs("#strip-val").textContent = `${Number(qs("#strip-depth").value).toFixed(1)} cm`;
+  const sv = qs("#strip-val");
+  if (sv) sv.textContent = `${Number(qs("#strip-depth").value).toFixed(1)} cm`;
 }
 qs("#strip-depth").addEventListener("input", () => {
   qs("#strip-val").textContent = `${Number(qs("#strip-depth").value).toFixed(1)} cm`;
@@ -318,9 +311,6 @@ document.addEventListener("keydown", (e) => {
 });
 workshop.highlightReels(state.cat);
 refresh(); setStep(state, "welcome"); refresh();
-if (window.matchMedia("(min-width: 981px)").matches) {
-  const box = qs("#progress-box"); if (box) box.open = true;
-}
 canvas.addEventListener("pointermove", (e) => {
   const tip = qs("#hover-tip");
   tip.style.left = e.clientX + 14 + "px";
