@@ -1054,13 +1054,48 @@ function inspect(root, api, add) {
   add(() => {});
 }
 
+const CRIMP_PLIER_SVG = `
+  <svg class="tool-svg crimp-plier-svg" viewBox="0 0 300 170" aria-hidden="true">
+    <g class="handle-lower">
+      <path d="M176 94 L286 148 C296 153 304 146 298 137 L186 88 Z" fill="#2c2c28" stroke="#1a1b14" stroke-width="2.4" stroke-linejoin="round"/>
+      <path d="M204 108 L276 142" stroke="#5a5a52" stroke-width="2.2" opacity=".35"/>
+    </g>
+    <g class="handle-upper">
+      <path d="M176 78 L284 24 C294 19 304 26 296 35 L184 86 Z" fill="#9c1f1f" stroke="#1a1b14" stroke-width="2.4" stroke-linejoin="round"/>
+      <path d="M204 66 L274 32" stroke="#d46a5a" stroke-width="2.2" opacity=".4"/>
+    </g>
+    <path fill-rule="evenodd" d="M8 18 H176 L186 86 L176 154 H8 C2 150 0 132 2 86 C0 40 2 22 8 18 Z M12 30 H168 V128 H12 Z" fill="#7d868e" stroke="#1a1b14" stroke-width="2.4" stroke-linejoin="round"/>
+    <path d="M14 22 H172 L180 36 H16 Z" fill="#c5ccd2" stroke="#1a1b14" stroke-width="1.2"/>
+    <path d="M12 128 H168 L166 148 H14 Z" fill="#5a6268" stroke="#1a1b14" stroke-width="1.6"/>
+    <rect x="161" y="30" width="7" height="98" fill="#d8dde0" stroke="#1a1b14" stroke-width="1.2"/>
+    <g fill="#c9a227" stroke="#5a4a10" stroke-width=".8">
+      <rect x="22" y="32" width="14" height="14"/>
+      <rect x="39" y="32" width="14" height="14"/>
+      <rect x="56" y="32" width="14" height="14"/>
+      <rect x="73" y="32" width="14" height="14"/>
+      <rect x="90" y="32" width="14" height="14"/>
+      <rect x="107" y="32" width="14" height="14"/>
+      <rect x="124" y="32" width="14" height="14"/>
+      <rect x="141" y="32" width="14" height="14"/>
+    </g>
+    <path d="M20 122 H156" stroke="#c9b888" stroke-width="2.2"/>
+    <circle cx="176" cy="86" r="13" fill="#c9b888" stroke="#1a1b14" stroke-width="2.4"/>
+    <circle cx="176" cy="86" r="4.4" fill="#6e7064"/>
+  </svg>`;
+
 function crimp(root, api, add) {
   const end = endOf(api.state);
   const box = el(`
-    <div class="stage-canvas">
-      <div class="work-row" id="row">
+    <div class="stage-canvas crimp-stage">
+      <div class="crimp-bench" id="row">
         ${plugPartMarkup(slotIds(end), { emerge: true })}
-        ${toolMarkup("crimper", "크림퍼")}
+        <div class="crimp-plier tool" id="crimper" role="img" aria-label="크림퍼">
+          <div class="crimp-plier-body">
+            ${CRIMP_PLIER_SVG}
+            <div class="crimp-die" id="jaw"></div>
+          </div>
+          <span class="tool-label">크림퍼</span>
+        </div>
         <div class="hold-meter hidden" id="meter"><i></i></div>
       </div>
     </div>
@@ -1069,25 +1104,48 @@ function crimp(root, api, add) {
   const row = qs("#row", box);
   const plug = qs("#plug", box);
   const crimper = qs("#crimper", box);
+  const jaw = qs("#jaw", box);
   const meter = qs("#meter", box);
   const bar = qs("i", meter);
   let seated = false;
 
   requestAnimationFrame(() => {
-    place(plug, Math.min(row.clientWidth * 0.28, Math.max(8, row.clientWidth - plug.offsetWidth - 8)), row.clientHeight * 0.28);
-    place(crimper, Math.max(8, row.clientWidth - crimper.offsetWidth - 8), 12);
+    const side = row.clientWidth - crimper.offsetWidth - plug.offsetWidth;
+    if (side > 28) {
+      place(plug, 10, Math.max(10, (row.clientHeight - plug.offsetHeight) * 0.42));
+      place(crimper, row.clientWidth - crimper.offsetWidth - 6, Math.max(4, (row.clientHeight - crimper.offsetHeight) * 0.16));
+    } else {
+      place(crimper, Math.max(4, (row.clientWidth - crimper.offsetWidth) * 0.5), 2);
+      place(plug, 8, Math.max(crimper.offsetHeight - 8, row.clientHeight - plug.offsetHeight - 26));
+    }
   });
 
+  function inJaws() {
+    return hits(jaw, plug, 0.28) || centerDist(jaw, plug) < 36;
+  }
+  function snapIntoJaws() {
+    const pr = plug.getBoundingClientRect();
+    const jr = jaw.getBoundingClientRect();
+    const dx = (pr.left + pr.width / 2) - (jr.left + jr.width / 2);
+    const dy = (pr.top + pr.height / 2) - (jr.top + jr.height / 2);
+    place(crimper, ...clampTool(crimper, crimper.offsetLeft + dx, crimper.offsetTop + dy, row));
+  }
   function seatCheck() {
-    seated = hits(crimper, plug, 0.05) || centerDist(crimper, plug) < 130;
+    const was = seated;
+    seated = inJaws();
+    crimper.classList.toggle("on-plug", seated);
     meter.classList.toggle("hidden", !seated);
-    if (seated) api.toast("크림퍼를 쥐고 있으세요.");
+    if (seated) {
+      snapIntoJaws();
+      if (!was) api.toast("크림퍼를 쥐고 있으세요.");
+    }
   }
 
   add(bindDrag(crimper, {
     container: row,
     onMove(x, y) {
       place(crimper, ...clampTool(crimper, x, y, row));
+      crimper.classList.toggle("on-plug", inJaws());
     },
     onEnd: seatCheck,
   }));
@@ -1095,8 +1153,16 @@ function crimp(root, api, add) {
   add(bindHold(crimper, {
     ms: 1400,
     enabled: () => seated,
-    onProgress(t) { bar.style.width = `${t * 100}%`; },
-    onCancel() { bar.style.width = "0"; },
+    onProgress(t) {
+      bar.style.width = `${t * 100}%`;
+      crimper.classList.add("squeezing");
+      plug.classList.toggle("cutting", t > 0.55);
+    },
+    onCancel() {
+      bar.style.width = "0";
+      crimper.classList.remove("squeezing");
+      plug.classList.remove("cutting");
+    },
     onDone() {
       end.crimped = true;
       api.finishCrimp();
