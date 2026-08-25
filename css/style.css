@@ -173,24 +173,47 @@ body {
 }
 .cable-draw.empty .cap { display: none; }
 .cap { display: flex; align-items: center; }
+.cap.left { flex-direction: row-reverse; }
 .cap.bare .copper {
   width: 10px;
   height: 8px;
   background: var(--copper);
   border: 1px solid #1a1b14;
 }
-.cap.plug { gap: 0; }
+.cap.plug, .cap.prepared { gap: 0; }
 .boot-bit {
-  width: 14px;
-  height: 16px;
-  background: #2d4a2d;
+  width: 15px;
+  height: 18px;
+  background: linear-gradient(180deg, #3a6a3a, #1a3a1a);
   border: 1px solid #111;
+  border-radius: 7px 2px 2px 7px;
+  position: relative;
 }
+.boot-bit::before {
+  content: "";
+  position: absolute;
+  left: 1px;
+  top: 4px;
+  bottom: 4px;
+  width: 5px;
+  border-radius: 50%;
+  background: #0a120a;
+}
+.mini-tip {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 18px;
+  height: 16px;
+  gap: 1px;
+}
+.mini-tip i { flex: 1; display: block; border: 1px solid #111; min-height: 1px; }
 .rj45 {
   width: 22px;
   height: 18px;
-  background: #d5ddd8;
+  background: rgba(213, 221, 216, 0.88);
   border: 1px solid #1a1b14;
+  border-radius: 1px 3px 3px 1px;
   display: grid;
   grid-template-columns: repeat(8, 1fr);
   padding: 2px 2px 0;
@@ -535,7 +558,7 @@ button.ok { background: #2d4a2d; }
   border-radius: 4px 0 0 4px;
   border-right-color: #1a1b14;
 }
-.cable-tip, .tool, .jacket-peel, .bundle, .boot {
+.cable-tip, .tool, .jacket-peel, .utp-run, .rj45-boot, .rj45-plug {
   position: absolute;
   touch-action: none;
 }
@@ -763,89 +786,162 @@ button.ok { background: #2d4a2d; }
 .work-row {
   position: relative;
   height: 100%;
+  overflow: visible;
 }
-.cable-horiz {
+.insert-hint {
   position: absolute;
-  left: 8px;
-  top: 38%;
-  width: 52%;
-  height: 40px;
-  background: #3f5a3c;
-  border: 2px solid #1a1b14;
-}
-.boot {
-  width: 84px;
-  height: 48px;
-  background: #245024;
-  border: 2px solid #1a1b14;
-  color: #e8ffe8;
-  font-weight: 800;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.85rem;
-}
-.plug-ghost {
-  position: absolute;
-  right: 10px;
-  top: 36%;
-  width: 90px;
-  height: 54px;
-  border: 2px dashed #888;
-  color: #bbb;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  right: 12px;
+  top: 8px;
+  margin: 0;
   font-size: 0.78rem;
   font-weight: 800;
-  text-align: center;
+  color: #f0d48a;
+  letter-spacing: 0.02em;
+  pointer-events: none;
 }
-.pt-plug {
-  position: absolute;
-  right: 8px;
-  top: 28%;
-  width: 120px;
-  height: 70px;
-  background: #d8e0dc;
+.utp-run {
+  display: flex;
+  align-items: center;
+  height: 56px;
+  z-index: 3;
+  cursor: grab;
+}
+.utp-jacket {
+  width: 158px;
+  height: 30px;
+  border-radius: 12px 3px 3px 12px;
+  background:
+    radial-gradient(14px 9px at 18% 28%, rgba(255, 255, 255, 0.2), transparent 70%),
+    linear-gradient(180deg, #6e9270 0%, #3f5a3c 22%, #355234 78%, #243c24 100%);
   border: 2px solid #1a1b14;
-  color: #1a1b14;
+  box-shadow: inset 0 2px 0 rgba(180, 210, 170, 0.35), inset 0 -3px 0 rgba(0, 0, 0, 0.25);
+  position: relative;
+  flex: 0 0 158px;
 }
-.pt-plug .holes {
+.utp-jacket::after {
+  content: "";
   position: absolute;
-  right: 4px;
-  top: 10px;
-  bottom: 10px;
-  width: 14px;
+  right: -2px;
+  top: 3px;
+  bottom: 3px;
+  width: 6px;
+  background: linear-gradient(90deg, #2a3e28, #c48a3a);
+  border-left: 1px solid #1a1b14;
+}
+.jacket-etch {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.55rem;
+  letter-spacing: 0.2em;
+  font-weight: 800;
+  color: rgba(18, 28, 16, 0.38);
+  pointer-events: none;
+}
+.utp-tip {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  width: 70px;
+  height: 26px;
+  gap: 1px;
+  margin-left: 1px;
+  z-index: 1;
 }
-.pt-plug .holes b {
-  height: 5px;
-  background: #111;
+.utp-run .rj45-boot.on-cable + .utp-tip { margin-left: -14px; }
+.utp-strand,
+.plug-strand,
+.emerge-strand {
+  flex: 1;
   display: block;
+  border: 1px solid #111;
+  min-height: 2px;
 }
-.pt-plug .holes b.on { box-shadow: 0 0 0 1px #111; }
-.bundle {
-  width: 130px;
-  height: 36px;
-  background: #3f5a3c;
-  border: 2px solid #1a1b14;
-  display: flex;
-  align-items: center;
-  padding-left: 6px;
-  gap: 2px;
+.rj45-boot {
+  width: 118px;
+  height: 64px;
+  z-index: 4;
+  cursor: grab;
+  background: transparent;
+  border: 0;
 }
-.bundle i { width: 6px; height: 22px; display: block; border: 1px solid #111; }
-.emerge {
+.rj45-boot .part-svg,
+.rj45-plug .part-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
+  filter: drop-shadow(1px 2px 0 #111);
+}
+.rj45-boot.seated {
+  z-index: 3;
+  cursor: default;
+  pointer-events: none;
+}
+.rj45-boot.on-cable {
+  position: relative;
+  left: -20px;
+  margin-right: -8px;
+  width: 96px;
+  height: 52px;
+  z-index: 2;
+  cursor: inherit;
+  flex: 0 0 96px;
+}
+.rj45-plug {
+  width: 168px;
+  height: 84px;
+  z-index: 4;
+  cursor: grab;
+  background: transparent;
+  border: 0;
+}
+.boot-lanes,
+.plug-lanes,
+.plug-emerge {
   position: absolute;
-  right: -2px;
-  top: 8px;
+  top: 32%;
+  height: 38%;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  justify-content: space-between;
+  gap: 1px;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
 }
-.emerge i { width: 16px; height: 5px; display: block; }
+.boot-lanes {
+  left: 14%;
+  width: 0;
+  max-width: 72%;
+  z-index: 2;
+}
+.boot-lanes.on { opacity: 1; }
+.plug-lanes {
+  left: 16%;
+  width: 0;
+  max-width: 70%;
+  z-index: 2;
+}
+.plug-emerge {
+  left: 92%;
+  width: 0;
+  overflow: visible;
+  z-index: 3;
+}
+.plug-lanes.on,
+.plug-emerge.on { opacity: 1; }
+.plug-emerge.on { width: 26px; }
+@keyframes reject-bounce {
+  0%, 100% { transform: translateX(0); }
+  18% { transform: translateX(-14px); }
+  36% { transform: translateX(11px); }
+  54% { transform: translateX(-8px); }
+  72% { transform: translateX(4px); }
+}
+.reject-bounce { animation: reject-bounce 0.42s ease; }
 
 /* inspect */
 .face {
