@@ -198,12 +198,8 @@ function cut(root, api, add) {
       <div class="length-read" id="read">푼 길이 0.20 m</div>
       <div class="cut-bench">
         <div class="cut-reel" id="reel" role="img" aria-label="Cat5e 케이블 릴">
-          <div class="cut-spool">
-            <i class="cut-flange" aria-hidden="true" style="border-color:${reel.flange};background:${reel.flange}"></i>
-            <div class="cut-barrel" style="color:${reel.jacket}">
-              <span class="cut-print">Cat5e</span>
-            </div>
-            <i class="cut-flange" aria-hidden="true" style="border-color:${reel.flange};background:${reel.flange}"></i>
+          <div class="cut-drum" style="color:${reel.jacket};border-color:${reel.flange}">
+            <span class="cut-print">Cat5e</span>
           </div>
           <div class="cut-lead" id="lead" aria-hidden="true"></div>
           <i class="cut-mouth" id="mouth" aria-hidden="true"></i>
@@ -233,8 +229,7 @@ function cut(root, api, add) {
   const face = qs("#face", box);
   const tip = qs("#tip", box);
   const lead = qs("#lead", box);
-  const mouth = qs("#mouth", box);
-  const barrel = qs(".cut-barrel", box);
+  const drum = qs(".cut-drum", box);
   const cutter = qs("#cutter", box);
   const guide = qs(".cut-guide", cutter);
   const read = qs("#read", box);
@@ -263,8 +258,7 @@ function cut(root, api, add) {
     return g.left + g.width / 2;
   }
   function mouthX() {
-    const m = mouth.getBoundingClientRect();
-    return m.left + m.width / 2;
+    return track.getBoundingClientRect().left;
   }
   function nearBenchY(cy) {
     const t = track.getBoundingClientRect();
@@ -279,7 +273,7 @@ function cut(root, api, add) {
     const w = Math.max(track.clientWidth, 1);
     const unspoolPx = (unspool / 1.5) * w;
     const onMouth = atReelMouth();
-    barrel.style.backgroundPosition = `0 ${Math.round(unspool * 48)}px`;
+    drum.style.setProperty("--spin", `${Math.round(unspool * 80)}deg`);
     if (onMouth) {
       hair.classList.remove("hidden");
       hair.style.left = "0px";
@@ -342,12 +336,12 @@ function cut(root, api, add) {
   }
   function parkNipperAtMouth(y) {
     const cr = canvas.getBoundingClientRect();
+    const t = track.getBoundingClientRect();
     const c = cutter.getBoundingClientRect();
     const inset = guideClientX() - c.left;
     const x = clamp(mouthX() - cr.left - inset, 0, Math.max(0, canvas.clientWidth - cutter.offsetWidth));
     if (y == null) {
-      const m = mouth.getBoundingClientRect();
-      y = clamp(m.top - cr.top + m.height / 2 - cutter.offsetHeight * 0.45, 0, Math.max(0, canvas.clientHeight - cutter.offsetHeight));
+      y = clamp(t.bottom - cr.top - 22, 0, Math.max(0, canvas.clientHeight - cutter.offsetHeight));
     }
     place(cutter, x, y);
     return [x, y];
@@ -361,6 +355,7 @@ function cut(root, api, add) {
     return parkNipperAtMouth(y);
   }
 
+  parkNipperAtMouth();
   requestAnimationFrame(() => {
     parkNipperAtMouth();
     paint();

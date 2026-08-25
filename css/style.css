@@ -437,11 +437,15 @@ button.ok { background: #2d4a2d; }
 /* cut / strip */
 .cut-stage .length-read { margin: 2px 8px 0; }
 .cut-bench {
+  position: relative;
+  z-index: 6;
   display: flex;
   align-items: stretch;
   margin: 6px 6px 0;
   min-height: 92px;
 }
+.cut-stage .cutter.tool { z-index: 4; }
+.cut-stage .cutter.dragging { z-index: 7; }
 .cut-reel {
   position: relative;
   flex: 0 0 104px;
@@ -454,35 +458,22 @@ button.ok { background: #2d4a2d; }
   justify-content: center;
   overflow: visible;
 }
-.cut-spool {
-  display: flex;
-  align-items: center;
-  height: 78px;
-  z-index: 2;
-}
-.cut-flange {
-  width: 11px;
-  height: 78px;
-  border: 2px solid #d5d0c4;
-  background: #d5d0c4;
-  box-shadow: inset 0 0 0 2px #8c877c, 0 2px 0 #111;
-  border-radius: 2px;
-}
-.cut-barrel {
-  width: 54px;
-  height: 52px;
-  border-top: 2px solid #1a1b14;
-  border-bottom: 2px solid #1a1b14;
-  background-color: currentColor;
-  background-image: repeating-linear-gradient(
-    180deg,
-    currentColor 0 7px,
-    #243528 7px 8px
-  );
+.cut-drum {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  border: 8px solid #d5d0c4;
+  background:
+    repeating-conic-gradient(
+      from var(--spin, 0deg),
+      currentColor 0 14deg,
+      #243528 14deg 18deg
+    );
+  box-shadow: inset 0 0 0 11px currentColor, 0 2px 0 #111;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.25);
+  z-index: 2;
 }
 .cut-print {
   font-size: 0.62rem;
@@ -492,6 +483,8 @@ button.ok { background: #2d4a2d; }
   background: #1a1b14;
   padding: 1px 4px;
   border: 1px solid #c9b888;
+  border-radius: 2px;
+  z-index: 1;
 }
 .cut-lead {
   position: absolute;
@@ -542,6 +535,7 @@ button.ok { background: #2d4a2d; }
   border-radius: 0 4px 4px 0;
   border-left: 0;
   min-width: 16px;
+  z-index: 2;
 }
 .cut-stage .cable-body.detached {
   border-left: 2px solid #1a1b14;
@@ -551,7 +545,7 @@ button.ok { background: #2d4a2d; }
 .cable-pull {
   position: absolute;
   top: 36px;
-  z-index: 3;
+  z-index: 6;
   min-width: 84px;
   height: 36px;
   display: flex;
