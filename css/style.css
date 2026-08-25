@@ -844,10 +844,13 @@ button.ok { background: #2d4a2d; }
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  width: 70px;
-  height: 26px;
-  gap: 1px;
+  width: 84px;
+  height: 40px;
+  gap: 2px;
   margin-left: 1px;
+  padding: 2px 3px;
+  background: #14160f;
+  border: 1px solid #1a1b14;
   z-index: 1;
 }
 .utp-run .rj45-boot.on-cable + .utp-tip { margin-left: -14px; }
@@ -856,8 +859,9 @@ button.ok { background: #2d4a2d; }
 .emerge-strand {
   flex: 1;
   display: block;
-  border: 1px solid #111;
-  min-height: 2px;
+  border: 0;
+  box-shadow: 0 0 0 1px #111;
+  min-height: 3px;
 }
 .rj45-boot {
   width: 118px;
@@ -867,6 +871,22 @@ button.ok { background: #2d4a2d; }
   background: transparent;
   border: 0;
 }
+.rj45-boot::before,
+.rj45-plug::before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 50%;
+  width: 16px;
+  height: 30px;
+  margin-top: -15px;
+  border: 2px dashed #f0d48a;
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0.75;
+}
+.rj45-boot.seated::before,
+.rj45-boot.on-cable::before { opacity: 0; }
 .rj45-boot .part-svg,
 .rj45-plug .part-svg {
   width: 100%;

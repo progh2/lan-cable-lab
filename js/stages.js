@@ -185,19 +185,26 @@ const INSERT_REASON = {
 
 /** Cable may enter a boot/plug only from the part's left (hollow) side. */
 function leftInsertVerdict(cable, part) {
-  const C = cable.getBoundingClientRect();
+  const tip = qs(".utp-tip", cable) || cable;
+  const jacket = qs(".utp-jacket", cable) || cable;
+  const T = tip.getBoundingClientRect();
+  const J = jacket.getBoundingClientRect();
   const P = part.getBoundingClientRect();
-  const ix = Math.max(0, Math.min(C.right, P.right) - Math.max(C.left, P.left));
-  const iy = Math.max(0, Math.min(C.bottom, P.bottom) - Math.max(C.top, P.top));
-  const inter = ix * iy;
-  if (inter <= 60 && centerDist(cable, part) >= 100) return "idle";
+  const C = cable.getBoundingClientRect();
+  const iyTip = Math.max(0, Math.min(T.bottom, P.bottom) - Math.max(T.top, P.top));
+  const ixTip = Math.max(0, Math.min(T.right, P.right) - Math.max(T.left, P.left));
+  const iyAll = Math.max(0, Math.min(C.bottom, P.bottom) - Math.max(C.top, P.top));
+  const ixAll = Math.max(0, Math.min(C.right, P.right) - Math.max(C.left, P.left));
+  const overlapAll = ixAll * iyAll;
+  const overlapTip = ixTip * iyTip;
+  if (overlapAll <= 80 && overlapTip <= 30 && centerDist(tip, part) >= 88) return "idle";
 
-  const cableMid = C.left + C.width / 2;
-  const partMid = P.left + P.width / 2;
-  const vRatio = iy / Math.max(1, Math.min(C.height, P.height));
-  if (C.left > P.left + P.width * 0.28 && cableMid > partMid) return "from-right";
-  if (vRatio < 0.2 && inter > 40) return "skew";
-  if (C.right > P.left + 6 && cableMid < partMid && vRatio >= 0.2) return "ok";
+  const vRatio = iyTip / Math.max(1, Math.min(T.height, P.height));
+  if (J.left > P.left + P.width * 0.38) return "from-right";
+  if (vRatio < 0.2 && overlapAll > 50) return "skew";
+  if (overlapTip > 40 && T.right > P.left + 8 && J.left < P.left + P.width * 0.35 && vRatio >= 0.2) {
+    return "ok";
+  }
   return "idle";
 }
 
