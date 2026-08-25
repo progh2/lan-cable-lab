@@ -963,50 +963,97 @@ button.ok { background: #2d4a2d; }
 }
 .reject-bounce { animation: reject-bounce 0.42s ease; }
 
-/* inspect */
-.face {
+/* inspect — 3/4 pass-through RJ45 face */
+.inspect-stage {
   height: 100%;
   display: flex;
   flex-direction: column;
-  padding: 8px;
-  gap: 8px;
-}
-.magnify {
-  flex: 1;
-  background: #cfd6d2;
-  border: 3px solid #1a1b14;
-  color: #1a1b14;
-  padding: 10px;
-  display: flex;
-  flex-direction: column;
-}
-.magnify h3 { margin: 0 0 8px; font-size: 0.95rem; }
-.holes-row {
-  display: flex;
+  padding: 4px 6px 6px;
   gap: 6px;
+  min-height: 0;
+}
+.inspect-caption {
+  margin: 0;
+  text-align: center;
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #f0d48a;
+  letter-spacing: 0.02em;
+}
+.inspect-plug {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.inspect-plug-frame {
+  position: relative;
+  width: min(96%, 520px);
+  aspect-ratio: 420 / 240;
+  max-height: 100%;
+}
+.inspect-plug-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  filter: drop-shadow(2px 3px 0 #111);
+}
+.inspect-exits {
+  position: absolute;
+  left: 28%;
+  right: 5%;
+  top: 40%;
+  height: 46%;
+  display: flex;
   justify-content: space-between;
   align-items: flex-end;
-  flex: 1;
+  pointer-events: none;
 }
-.hole {
+.inspect-exit {
   flex: 1;
-  text-align: center;
-  font-size: 0.68rem;
-  font-weight: 800;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
 }
-.hole .circ {
-  width: 100%;
+.inspect-stub {
+  width: 58%;
+  height: 28%;
+  min-height: 14px;
+  display: block;
+  box-shadow: 0 0 0 1px #111;
+}
+.inspect-hole {
+  width: 62%;
   aspect-ratio: 1;
-  max-width: 52px;
-  margin: 0 auto 4px;
+  max-width: 36px;
   border-radius: 50%;
   border: 2px solid #1a1b14;
+  background: #2a3330;
   box-shadow: inset 0 0 0 3px #8a908c;
+  overflow: hidden;
+  display: block;
+}
+.inspect-hole i { display: block; width: 100%; height: 100%; }
+.inspect-pin {
+  font-size: 0.72rem;
+  font-weight: 900;
+  color: #1a1b14;
+  line-height: 1;
+}
+.inspect-exit small {
+  font-size: 0.58rem;
+  font-weight: 800;
+  color: #2a2b22;
+  line-height: 1;
 }
 .inspect-actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
+  flex-shrink: 0;
 }
 
 /* crimp */
@@ -1077,4 +1124,6 @@ button.ok { background: #2d4a2d; }
 @media (max-height: 720px) {
   .pair, .straight-wire { min-height: 36px; }
   .pairs, .straights { gap: 5px; }
+  .inspect-caption { font-size: 0.7rem; }
+  .inspect-stub { min-height: 10px; }
 }
