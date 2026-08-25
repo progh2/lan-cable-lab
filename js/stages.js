@@ -234,7 +234,7 @@ function bounceReject(el, x, y, api, reason) {
 
 function clampPart(node, x, y, box) {
   return [
-    clamp(x, 0, Math.max(0, box.clientWidth - node.offsetWidth)),
+    clamp(x, -40, Math.max(0, box.clientWidth - 48)),
     clamp(y, 0, Math.max(0, box.clientHeight - node.offsetHeight)),
   ];
 }
@@ -764,7 +764,7 @@ function boot(root, api, add) {
     const h = row.clientHeight;
     const w = row.clientWidth;
     cableHome = [8, Math.max(10, h * 0.36)];
-    bootHome = [Math.max(160, w - bootEl.offsetWidth - 12), Math.max(10, h * 0.34)];
+    bootHome = [Math.max(200, Math.min(w * 0.56, w - bootEl.offsetWidth - 90)), Math.max(10, h * 0.34)];
   }
   function paintBootLanes(t) {
     const pct = Math.max(0, Math.min(1, t));
@@ -864,7 +864,7 @@ function insert(root, api, add) {
     const h = row.clientHeight;
     const w = row.clientWidth;
     cableHome = [8, Math.max(10, h * 0.36)];
-    plugHome = [Math.max(200, w - plug.offsetWidth - 36), Math.max(8, h * 0.28)];
+    plugHome = [Math.max(240, Math.min(w * 0.58, w - plug.offsetWidth - 90)), Math.max(8, h * 0.28)];
   }
   function paintThrough(t) {
     const pct = Math.max(0, Math.min(1, t));
