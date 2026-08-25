@@ -708,34 +708,81 @@ button.ok { background: #2d4a2d; }
   display: block;
 }
 
-/* sort */
+/* sort — 8 standing conductors, compact (about half the old full-desk grid) */
 .sort-wrap {
   display: flex;
   flex-direction: column;
   height: 100%;
+  min-height: 0;
   padding: 6px;
   gap: 8px;
+  justify-content: flex-start;
+  overflow: auto;
 }
 .slots {
   display: flex;
-  flex-direction: column;
-  gap: 5px;
-  flex: 1;
-  min-height: 0;
-  overflow: auto;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 4px;
+  flex: 0 0 auto;
+  height: min(46%, 168px);
+  min-height: 100px;
+  overflow: visible;
 }
 .slot {
-  min-height: 48px;
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
   border: 2px dashed #c9b888;
   background: rgba(20, 20, 14, 0.2);
   display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 4px 8px;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  padding: 0;
   font-weight: 800;
+  overflow: hidden;
 }
-.slot.filled { border-style: solid; background: #3d3f34; }
-.slot .num { width: 1.4em; color: #f0d48a; }
+.slot.filled {
+  border-style: solid;
+  background: transparent;
+}
+.slot .num {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  text-align: center;
+  color: #f0d48a;
+  font-size: 0.7rem;
+  line-height: 1.2;
+  padding: 3px 0 0;
+  pointer-events: none;
+  text-shadow: 0 0 2px #1a1b14, 0 1px 0 #1a1b14;
+}
+.slot-wire {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 0.62rem;
+  line-height: 1.15;
+  word-break: keep-all;
+  padding: 16px 2px 4px;
+  border: 0;
+  cursor: grab;
+}
+.slot-wire.dragging {
+  inset: auto;
+  width: auto !important;
+  height: 44px;
+  min-width: 72px;
+  padding: 6px 10px;
+  border: 2px solid #1a1b14;
+}
 .tray {
   display: flex;
   flex-wrap: wrap;
@@ -936,16 +983,11 @@ button.ok { background: #2d4a2d; }
   .rack { grid-template-columns: repeat(4, 1fr); height: calc(100% - 80px); }
   .pairs, .straights { grid-template-columns: repeat(4, 1fr); }
   .slots {
-    flex-direction: row;
-    align-items: stretch;
+    height: min(46%, 196px);
+    min-height: 120px;
+    gap: 5px;
   }
-  .slot {
-    flex: 1;
-    flex-direction: column;
-    justify-content: flex-start;
-    min-height: 110px;
-    padding-top: 8px;
-  }
+  .slot-wire { font-size: 0.72rem; }
   .booth h1 { font-size: 1.15rem; }
 }
 
@@ -956,6 +998,8 @@ button.ok { background: #2d4a2d; }
   .pair, .straight-wire { min-height: 38px; font-size: 0.72rem; padding: 3px 5px; }
   .twist { width: 44px; height: 8px; }
   .strand { width: 40px; height: 7px; }
+  .slots { height: min(44%, 156px); min-height: 92px; gap: 3px; }
+  .slot-wire { font-size: 0.58rem; padding: 14px 1px 3px; }
 }
 
 @media (max-height: 720px) {
