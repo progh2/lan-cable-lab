@@ -943,26 +943,28 @@ function insert(root, api, add) {
   }));
 }
 
-/** 3/4 pass-through RJ45: clear body, gold contacts, wires exit the FACE. */
+/** Front-on pass-through RJ45: latch down, pin 1 left, wires exit the face. */
 function inspectFaceSvg() {
   return `
-    <svg class="inspect-plug-svg" viewBox="0 0 420 240" aria-hidden="true">
-      <path d="M30 76 L78 50 L78 198 L30 214 Z" fill="#8e9f98" stroke="#1a1b14" stroke-width="2.1"/>
-      <path d="M78 50 L368 34 L406 66 L116 80 Z" fill="#c5d4ce" stroke="#1a1b14" stroke-width="2.1"/>
-      <path d="M116 80 L406 66 L406 194 L116 206 Z" fill="#d8e8e2" fill-opacity=".7" stroke="#1a1b14" stroke-width="2.2"/>
-      <path d="M136 98 L386 86 L386 176 L136 186 Z" fill="#eef4f1" fill-opacity=".28" stroke="#1a1b14" stroke-opacity=".2"/>
-      <g fill="#d4b12a" stroke="#6a5810" stroke-width=".75">
-        <path d="M126 46 L144 44 L150 70 L132 72 Z"/>
-        <path d="M158 44 L176 42 L182 68 L164 70 Z"/>
-        <path d="M190 42 L208 40 L214 66 L196 68 Z"/>
-        <path d="M222 40 L240 38 L246 64 L228 66 Z"/>
-        <path d="M254 38 L272 36 L278 62 L260 64 Z"/>
-        <path d="M286 36 L304 35 L310 60 L292 62 Z"/>
-        <path d="M318 35 L336 34 L342 58 L324 60 Z"/>
-        <path d="M350 34 L368 33 L374 56 L356 58 Z"/>
+    <svg class="inspect-plug-svg" viewBox="0 0 400 250" aria-hidden="true">
+      <path d="M48 22 H336 L360 46 V132 L336 148 H48 L24 132 V46 Z" fill="#cfdcd6" stroke="#1a1b14" stroke-width="2.6" stroke-linejoin="round"/>
+      <path d="M48 22 H336 L352 36 H32 Z" fill="#e4eeea" stroke="#1a1b14" stroke-width="1.5"/>
+      <path d="M360 46 V132 L336 148 V36 Z" fill="#9aada6" stroke="#1a1b14" stroke-width="1.5"/>
+      <path d="M40 50 H360 V78 H40 Z" fill="#2a3330" stroke="#1a1b14" stroke-width="1.7"/>
+      <g fill="#d4b12a" stroke="#6a5810" stroke-width=".85">
+        <rect x="52" y="52" width="30" height="24" rx="1"/>
+        <rect x="90" y="52" width="30" height="24" rx="1"/>
+        <rect x="128" y="52" width="30" height="24" rx="1"/>
+        <rect x="166" y="52" width="30" height="24" rx="1"/>
+        <rect x="204" y="52" width="30" height="24" rx="1"/>
+        <rect x="242" y="52" width="30" height="24" rx="1"/>
+        <rect x="280" y="52" width="30" height="24" rx="1"/>
+        <rect x="318" y="52" width="30" height="24" rx="1"/>
       </g>
-      <path d="M190 202 L316 194 L328 228 L178 234 Z" fill="#b8c4be" stroke="#1a1b14" stroke-width="2"/>
-      <path d="M208 214 H300" stroke="#6e7064" stroke-width="3.2" stroke-linecap="round"/>
+      <path d="M48 86 H336 V138 H48 Z" fill="#d8e8e2" fill-opacity=".28"/>
+      <path d="M156 148 L244 148 L262 196 L138 196 Z" fill="#aebbb5" stroke="#1a1b14" stroke-width="2.3" stroke-linejoin="round"/>
+      <path d="M166 156 L234 156 L246 186 L154 186 Z" fill="#7d8b85" stroke="#1a1b14" stroke-width="1.4"/>
+      <path d="M184 166 H216" stroke="#efe6cf" stroke-width="3.2" stroke-linecap="round"/>
     </svg>`;
 }
 
@@ -971,14 +973,19 @@ function inspectPlugMarkup(ids) {
     const w = WIRES[id] || WIRES.wo;
     return `
       <div class="inspect-exit">
+        <b class="inspect-hole" aria-hidden="true"></b>
         <i class="inspect-stub" style="${wireStyle(id)}"></i>
-        <b class="inspect-hole"><i style="${wireStyle(id)}"></i></b>
         <span class="inspect-pin">${i + 1}</span>
         <small>${w.short}</small>
       </div>`;
   }).join("");
   return `
     <div class="inspect-plug" role="img" aria-label="관통형 RJ45 앞면 출구">
+      <div class="inspect-side" aria-hidden="true">
+        <div class="utp-jacket"><span class="jacket-etch">CAT5E</span></div>
+        <div class="rj45-boot on-cable">${bootSvg()}</div>
+        <div class="inspect-side-plug">${plugSvg()}</div>
+      </div>
       <div class="inspect-plug-frame">
         ${inspectFaceSvg()}
         <div class="inspect-exits">${exits}</div>
