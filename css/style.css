@@ -820,13 +820,14 @@ button.ok { background: #2d4a2d; }
 }
 .depth-read { color: #f0d48a; }
 
-/* untwist — compact 4-pair / 8-wire grid; never clip without scroll */
+/* untwist — pairs stay a compact grid; straighten is a vertical cable */
 .stage:has(.pairs),
-.stage:has(.straights) {
+.stage:has(.straight-lab) {
   overflow: auto;
   touch-action: pan-y;
 }
-.pairs, .straights {
+.stage:has(.straight-lab) { touch-action: none; }
+.pairs {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 6px;
@@ -837,7 +838,7 @@ button.ok { background: #2d4a2d; }
   -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
 }
-.pair, .straight-wire {
+.pair {
   min-height: 40px;
   border: 2px solid #1a1b14;
   display: flex;
@@ -849,8 +850,8 @@ button.ok { background: #2d4a2d; }
   line-height: 1.2;
   background: #3d3f34;
 }
-.pair span, .straight-wire span { min-width: 0; }
-.pair.done, .straight-wire.done { outline: 2px solid #8ccc7a; }
+.pair span { min-width: 0; }
+.pair.done { outline: 2px solid #8ccc7a; }
 .twist {
   width: 52px;
   height: 10px;
@@ -862,12 +863,73 @@ button.ok { background: #2d4a2d; }
 .pair.done .twist {
   background: linear-gradient(90deg, var(--a) 50%, var(--b) 50%);
 }
-.strand {
-  width: 48px;
-  height: 8px;
+
+.straight-lab {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 0 2px 2px;
+}
+.straight-hint {
+  margin: 0 2px 2px;
   flex-shrink: 0;
-  border: 1px solid #111;
-  display: block;
+  text-align: center;
+  font-weight: 800;
+  font-size: 0.84rem;
+  line-height: 1.3;
+  color: #f0d48a;
+}
+.bouquet {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+}
+.bouquet svg {
+  width: 100%;
+  height: 100%;
+  max-width: 420px;
+  touch-action: none;
+  overflow: visible;
+}
+.bouquet-pad { fill: transparent; pointer-events: all; }
+.strand-g { cursor: pointer; }
+.strand-g.done { cursor: default; }
+.strand-hit {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 18;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: stroke;
+}
+.strand-outline {
+  fill: none;
+  stroke: #1a1b14;
+  stroke-width: 5.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+.strand-body, .strand-stripe {
+  fill: none;
+  stroke-width: 4.1;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+.strand-tip {
+  fill: var(--copper);
+  stroke: #1a1b14;
+  stroke-width: 0.9;
+  pointer-events: none;
+}
+.strand-g.active .strand-body,
+.strand-g.active .strand-stripe { stroke-width: 5.1; }
+.strand-g.done .strand-body {
+  filter: drop-shadow(0 0 3px #8ccc7a);
 }
 
 /* sort — 8 standing conductors, compact (about half the old full-desk grid) */
@@ -1317,7 +1379,7 @@ button.ok { background: #2d4a2d; }
 
 @media (min-width: 720px) {
   .rack { grid-template-columns: repeat(4, 1fr); height: calc(100% - 80px); }
-  .pairs, .straights { grid-template-columns: repeat(4, 1fr); }
+  .pairs { grid-template-columns: repeat(4, 1fr); }
   .slots {
     height: min(46%, 196px);
     min-height: 120px;
@@ -1331,16 +1393,17 @@ button.ok { background: #2d4a2d; }
   .ticket-job { font-size: 0.86rem; }
   .booth h1 { font-size: 0.92rem; }
   #prompt { font-size: 0.92rem; }
-  .pair, .straight-wire { min-height: 38px; font-size: 0.72rem; padding: 3px 5px; }
+  .pair { min-height: 38px; font-size: 0.72rem; padding: 3px 5px; }
   .twist { width: 44px; height: 8px; }
-  .strand { width: 40px; height: 7px; }
+  .straight-hint { font-size: 0.78rem; }
   .slots { height: min(44%, 156px); min-height: 92px; gap: 3px; }
   .slot-wire { font-size: 0.58rem; padding: 14px 1px 3px; }
 }
 
 @media (max-height: 720px) {
-  .pair, .straight-wire { min-height: 36px; }
-  .pairs, .straights { gap: 5px; }
+  .pair { min-height: 36px; }
+  .pairs { gap: 5px; }
+  .straight-hint { font-size: 0.76rem; }
   .inspect-caption { font-size: 0.7rem; }
   .inspect-stub { min-height: 10px; }
 }
