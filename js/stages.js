@@ -181,31 +181,47 @@ function plugPartMarkup(ids, { emerge = false, id = "plug" } = {}) {
 const INSERT_REASON = {
   "from-right": "오른쪽에서는 안 들어갑니다.",
   skew: "왼쪽 구멍 높이를 맞추세요.",
+  "wrong-end": "가닥 끝(오른쪽)으로 끼우세요.",
 };
+
+function overlapArea(a, b) {
+  const ix = Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left));
+  const iy = Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
+  return ix * iy;
+}
+
+/** Pure geometry: tip must enter the part's left hollow; jacket stays on the left. */
+export function verdictFromRects(tip, jacket, part, cable) {
+  const overlapAll = overlapArea(cable, part);
+  const overlapTip = overlapArea(tip, part);
+  const tipMidX = tip.left + tip.width / 2;
+  const partMidX = part.left + part.width / 2;
+  const iyTip = Math.max(0, Math.min(tip.bottom, part.bottom) - Math.max(tip.top, part.top));
+  const close = overlapAll > 80 || overlapTip > 30
+    || Math.hypot(tipMidX - partMidX, (tip.top + tip.height / 2) - (part.top + part.height / 2)) < 88;
+  if (!close) return "idle";
+
+  const vRatio = iyTip / Math.max(1, Math.min(tip.height, part.height));
+  if (jacket.left > part.left + part.width * 0.15) return "from-right";
+  const tipHorizNear = tip.right > part.left - 20 && tip.left < part.right;
+  if (vRatio < 0.2 && overlapAll > 50 && tipHorizNear) return "skew";
+  if (overlapAll > 80 && overlapTip < 25) return "wrong-end";
+  if (overlapTip > 40 && tip.right > part.left + 8 && jacket.left < part.left + part.width * 0.3 && vRatio >= 0.2) {
+    return "ok";
+  }
+  return "idle";
+}
 
 /** Cable may enter a boot/plug only from the part's left (hollow) side. */
 function leftInsertVerdict(cable, part) {
   const tip = qs(".utp-tip", cable) || cable;
   const jacket = qs(".utp-jacket", cable) || cable;
-  const T = tip.getBoundingClientRect();
-  const J = jacket.getBoundingClientRect();
-  const P = part.getBoundingClientRect();
-  const C = cable.getBoundingClientRect();
-  const iyTip = Math.max(0, Math.min(T.bottom, P.bottom) - Math.max(T.top, P.top));
-  const ixTip = Math.max(0, Math.min(T.right, P.right) - Math.max(T.left, P.left));
-  const iyAll = Math.max(0, Math.min(C.bottom, P.bottom) - Math.max(C.top, P.top));
-  const ixAll = Math.max(0, Math.min(C.right, P.right) - Math.max(C.left, P.left));
-  const overlapAll = ixAll * iyAll;
-  const overlapTip = ixTip * iyTip;
-  if (overlapAll <= 80 && overlapTip <= 30 && centerDist(tip, part) >= 88) return "idle";
-
-  const vRatio = iyTip / Math.max(1, Math.min(T.height, P.height));
-  if (J.left > P.left + P.width * 0.38) return "from-right";
-  if (vRatio < 0.2 && overlapAll > 50) return "skew";
-  if (overlapTip > 40 && T.right > P.left + 8 && J.left < P.left + P.width * 0.35 && vRatio >= 0.2) {
-    return "ok";
-  }
-  return "idle";
+  return verdictFromRects(
+    tip.getBoundingClientRect(),
+    jacket.getBoundingClientRect(),
+    part.getBoundingClientRect(),
+    cable.getBoundingClientRect(),
+  );
 }
 
 function bounceReject(el, x, y, api, reason) {
@@ -778,7 +794,7 @@ function boot(root, api, add) {
       snapBootOn();
       return;
     }
-    if (v === "from-right" || v === "skew") {
+    if (INSERT_REASON[v]) {
       const home = moved === bootEl ? bootHome : cableHome;
       bounceReject(moved, home[0], home[1], api, INSERT_REASON[v]);
       paintBootLanes(0);
@@ -879,7 +895,7 @@ function insert(root, api, add) {
       snapIn();
       return;
     }
-    if (v === "from-right" || v === "skew") {
+    if (INSERT_REASON[v]) {
       end.inserted = false;
       const home = moved === plug ? plugHome : cableHome;
       bounceReject(moved, home[0], home[1], api, INSERT_REASON[v]);
