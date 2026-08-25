@@ -727,7 +727,7 @@ function untwist(root, api, add) {
       if (w.stripe) {
         stripe.setAttribute("d", d);
         stripe.setAttribute("stroke", w.stripe);
-        stripe.setAttribute("stroke-dasharray", "4.2 2.6");
+        stripe.setAttribute("stroke-dasharray", "5.5 3.2");
         stripe.classList.remove("hidden");
       } else {
         stripe.classList.add("hidden");
@@ -763,8 +763,9 @@ function untwist(root, api, add) {
     }
     function pickWire(ev) {
       let best = null;
-      let bestD = 18;
+      let bestD = 20;
       FAN.forEach((_, i) => {
+        if (end.wires[T568B.indexOf(FAN[i])]) return;
         const d = distTo(i, ev);
         if (d < bestD) {
           bestD = d;
@@ -800,7 +801,7 @@ function untwist(root, api, add) {
       const step = Math.hypot(dx, dy);
       live.x = ev.clientX;
       live.y = ev.clientY;
-      if (distTo(live.fanI, ev) <= 20) {
+      if (distTo(live.fanI, ev) <= 34) {
         live.near += step;
         live.along += Math.abs(dy);
       }
@@ -870,9 +871,9 @@ function strandPoints(fanI, progress) {
   const startY = 252;
   const pair = Math.floor(fanI / 2);
   const inPair = fanI % 2;
-  const tipX = 22 + pair * 52 + inPair * 18;
+  const tipX = 20 + pair * 52 + inPair * 20;
   const tipY = 16;
-  const amp = (1 - progress) * (15 + (fanI % 3) * 2.4);
+  const amp = (1 - progress) * (13 + (fanI % 3) * 2);
   const n = 12;
   const pts = [];
   for (let s = 0; s <= n; s++) {
@@ -888,7 +889,16 @@ function strandPoints(fanI, progress) {
 }
 
 function pathFrom(pts) {
-  return pts.map((p, n) => `${n ? "L" : "M"}${p[0].toFixed(2)},${p[1].toFixed(2)}`).join("");
+  if (pts.length < 2) return "";
+  let d = `M${pts[0][0].toFixed(2)},${pts[0][1].toFixed(2)}`;
+  for (let i = 1; i < pts.length - 1; i++) {
+    const xc = (pts[i][0] + pts[i + 1][0]) / 2;
+    const yc = (pts[i][1] + pts[i + 1][1]) / 2;
+    d += ` Q${pts[i][0].toFixed(2)},${pts[i][1].toFixed(2)} ${xc.toFixed(2)},${yc.toFixed(2)}`;
+  }
+  const last = pts[pts.length - 1];
+  d += ` T${last[0].toFixed(2)},${last[1].toFixed(2)}`;
+  return d;
 }
 
 function bindFlick(node, onFlick, add, api, need = 48) {
