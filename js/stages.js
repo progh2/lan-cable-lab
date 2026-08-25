@@ -185,20 +185,37 @@ function reel(root, api, add) {
   });
 }
 
+function selectedReel(state) {
+  return REELS.find((x) => x.id === state.reelId) || REELS.find((x) => x.ok);
+}
+
 function cut(root, api, add) {
+  const reel = selectedReel(api.state);
   const lo = ((JOB.lengthM - JOB.lengthTolM) / 1.5) * 100;
   const hi = ((JOB.lengthM + JOB.lengthTolM) / 1.5) * 100;
   const box = el(`
-    <div class="stage-canvas">
+    <div class="stage-canvas cut-stage">
       <div class="length-read" id="read">푼 길이 0.20 m</div>
-      <div class="measure-track" id="track">
-        <div class="ok-band" style="left:${lo}%;width:${hi - lo}%"></div>
-        <div class="ruler" id="ruler"></div>
-        <i class="cut-hair hidden" id="hair" aria-hidden="true"></i>
-        <div class="cable-body" id="body"></div>
-        <div class="cable-cut-face hidden" id="face" aria-hidden="true"></div>
-        <div class="cable-scrap hidden" id="scrap" aria-hidden="true"></div>
-        <div class="cable-tip" id="tip"></div>
+      <div class="cut-bench">
+        <div class="cut-reel" id="reel" role="img" aria-label="Cat5e 케이블 릴">
+          <div class="cut-drum" style="color:${reel.jacket};border-color:${reel.flange}">
+            <span class="cut-print">Cat5e</span>
+          </div>
+          <div class="cut-lead" id="lead" aria-hidden="true"></div>
+          <i class="cut-mouth" id="mouth" aria-hidden="true"></i>
+          <small>릴 · 소스</small>
+        </div>
+        <div class="measure-track" id="track">
+          <div class="ok-band" style="left:${lo}%;width:${hi - lo}%"></div>
+          <div class="ruler" id="ruler"></div>
+          <i class="cut-hair hidden" id="hair" aria-hidden="true"></i>
+          <div class="cable-body" id="body"></div>
+          <div class="cable-cut-face hidden" id="face" aria-hidden="true"></div>
+          <div class="cable-pull" id="tip">
+            <i class="free-end" aria-hidden="true"></i>
+            <span>당기기</span>
+          </div>
+        </div>
       </div>
       ${toolMarkup("cutter", "니퍼")}
     </div>
@@ -210,8 +227,9 @@ function cut(root, api, add) {
   const body = qs("#body", box);
   const hair = qs("#hair", box);
   const face = qs("#face", box);
-  const scrap = qs("#scrap", box);
   const tip = qs("#tip", box);
+  const lead = qs("#lead", box);
+  const drum = qs(".cut-drum", box);
   const cutter = qs("#cutter", box);
   const guide = qs(".cut-guide", cutter);
   const read = qs("#read", box);
@@ -223,8 +241,10 @@ function cut(root, api, add) {
   ]);
 
   let unspool = 0.2;
-  let cutAt = null;
+  let severed = false;
   let offered = false;
+  let goTimer = 0;
+  add(() => clearTimeout(goTimer));
 
   function snapM(m) {
     return Math.round(clamp(m, 0.05, 1.5) * 100) / 100;
@@ -237,101 +257,113 @@ function cut(root, api, add) {
     const g = guide.getBoundingClientRect();
     return g.left + g.width / 2;
   }
+  function mouthX() {
+    return track.getBoundingClientRect().left;
+  }
+  function nearBenchY(cy) {
+    const t = track.getBoundingClientRect();
+    return cy >= t.top - 40 && cy <= t.bottom + 56;
+  }
+  function atReelMouth() {
+    const c = cutter.getBoundingClientRect();
+    const cy = c.top + c.height / 2;
+    return nearBenchY(cy) && Math.abs(guideClientX() - mouthX()) <= 22;
+  }
   function paint() {
     const w = Math.max(track.clientWidth, 1);
     const unspoolPx = (unspool / 1.5) * w;
-    const guideM = clientToM(guideClientX());
-    const markM = cutAt != null ? cutAt : guideM;
-    const t = track.getBoundingClientRect();
-    const c = cutter.getBoundingClientRect();
-    const cy = c.top + c.height / 2;
-    const gx = guideClientX();
-    const overTrack = gx >= t.left - 10 && gx <= t.right + 10 && cy >= t.top - 36 && cy <= t.bottom + 56;
-    if (overTrack) {
+    const onMouth = atReelMouth();
+    drum.style.setProperty("--spin", `${Math.round(unspool * 80)}deg`);
+    if (onMouth) {
       hair.classList.remove("hidden");
-      hair.style.left = `${(markM / 1.5) * w}px`;
+      hair.style.left = "0px";
     } else {
       hair.classList.add("hidden");
     }
-    if (cutAt != null) {
-      const cutPx = (cutAt / 1.5) * w;
-      body.style.width = `${Math.max(12, cutPx)}px`;
-      body.classList.add("severed");
+    read.textContent = `푼 길이 ${unspool.toFixed(2)} m`;
+    if (severed) {
+      const gap = 14;
+      body.style.left = `${gap}px`;
+      body.style.width = `${Math.max(20, unspoolPx - 4)}px`;
+      body.classList.add("detached");
+      lead.classList.add("leftover");
       face.classList.remove("hidden");
-      face.style.left = `${Math.max(0, cutPx - 3)}px`;
-      const scrapW = Math.max(0, unspoolPx - cutPx - 12);
-      if (scrapW > 10) {
-        scrap.classList.remove("hidden");
-        scrap.style.left = `${cutPx + 10}px`;
-        scrap.style.width = `${scrapW}px`;
-      } else {
-        scrap.classList.add("hidden");
-      }
+      face.style.left = `${gap}px`;
       tip.classList.add("hidden");
-      read.textContent = `절단 기준 ${cutAt.toFixed(2)} m · 푼 길이 ${unspool.toFixed(2)} m`;
     } else {
+      body.style.left = "0px";
       body.style.width = `${Math.max(24, unspoolPx)}px`;
-      body.classList.remove("severed");
+      body.classList.remove("detached");
+      lead.classList.remove("leftover");
       face.classList.add("hidden");
-      scrap.classList.add("hidden");
       tip.classList.remove("hidden");
-      tip.style.left = `${Math.max(0, unspoolPx - 12)}px`;
-      read.textContent = `푼 길이 ${unspool.toFixed(2)} m · 파선 ${guideM.toFixed(2)} m`;
+      tip.style.left = `${Math.max(0, unspoolPx - 8)}px`;
     }
   }
   function checkCutter() {
-    const gx = guideClientX();
-    const c = cutter.getBoundingClientRect();
-    const t = track.getBoundingClientRect();
-    const cy = c.top + c.height / 2;
-    const onTrack = gx >= t.left - 10 && gx <= t.right + 10 && cy >= t.top - 28 && cy <= t.bottom + 48;
-    const at = clientToM(gx);
-    const onCable = onTrack && at <= unspool + 0.03;
-    if (onCable) {
-      cutAt = at;
-      paint();
+    paint();
+    if (severed) return;
+    if (atReelMouth()) {
       if (!offered) {
         offered = true;
-        api.primary("이 파선에서 자르기", commit);
+        api.primary("릴 쪽에서 자르기", commit);
       }
     } else {
-      cutAt = null;
       offered = false;
-      paint();
       api.primary(null);
     }
   }
   function commit() {
-    const m = cutAt == null ? unspool : cutAt;
+    if (severed) return;
+    severed = true;
+    offered = false;
+    api.primary(null);
+    paint();
+    const m = unspool;
     if (Math.abs(m - JOB.lengthM) <= JOB.lengthTolM) {
       api.state.cutLengthM = m;
-      api.go("strip");
+      goTimer = setTimeout(() => api.go("strip"), 480);
     } else {
-      api.reject(m < JOB.lengthM ? `${m.toFixed(2)}m — 너무 짧습니다. 1.00m ±5cm.` : `${m.toFixed(2)}m — 너무 깁니다. 1.00m ±5cm.`);
+      api.reject(m < JOB.lengthM
+        ? `${m.toFixed(2)}m — 너무 짧습니다. 1.00m ±5cm.`
+        : `${m.toFixed(2)}m — 너무 깁니다. 1.00m ±5cm.`
+      ).then(() => {
+        severed = false;
+        paint();
+        checkCutter();
+      });
     }
   }
-  function snapNipperX(x, y) {
-    [x, y] = clampTool(cutter, x, y, canvas);
-    place(cutter, x, y);
+  function parkNipperAtMouth(y) {
+    const cr = canvas.getBoundingClientRect();
     const t = track.getBoundingClientRect();
     const c = cutter.getBoundingClientRect();
-    const cy = c.top + c.height / 2;
-    if (cy < t.top - 28 || cy > t.bottom + 48) return [x, y];
-    const gx = guideClientX();
-    const m = clientToM(gx);
-    const cr = canvas.getBoundingClientRect();
-    const inset = gx - c.left;
-    x = clamp(t.left - cr.left + (m / 1.5) * t.width - inset, 0, Math.max(0, canvas.clientWidth - cutter.offsetWidth));
+    const inset = guideClientX() - c.left;
+    const x = clamp(mouthX() - cr.left - inset, 0, Math.max(0, canvas.clientWidth - cutter.offsetWidth));
+    if (y == null) {
+      y = clamp(t.bottom - cr.top - 22, 0, Math.max(0, canvas.clientHeight - cutter.offsetHeight));
+    }
     place(cutter, x, y);
     return [x, y];
   }
+  function snapNipperToMouth(x, y) {
+    [x, y] = clampTool(cutter, x, y, canvas);
+    place(cutter, x, y);
+    const c = cutter.getBoundingClientRect();
+    const cy = c.top + c.height / 2;
+    if (!nearBenchY(cy)) return [x, y];
+    return parkNipperAtMouth(y);
+  }
 
+  parkNipperAtMouth();
   requestAnimationFrame(() => {
-    place(cutter, 10, Math.max(100, canvas.clientHeight - cutter.offsetHeight - 4));
+    parkNipperAtMouth();
     paint();
+    checkCutter();
   });
 
   function pullTo(ev) {
+    if (severed) return;
     unspool = clientToM(ev.clientX);
     paint();
     checkCutter();
@@ -351,10 +383,14 @@ function cut(root, api, add) {
   add(bindDrag(cutter, {
     container: canvas,
     onMove(x, y) {
-      snapNipperX(x, y);
+      snapNipperToMouth(x, y);
       checkCutter();
     },
-    onEnd: checkCutter,
+    onEnd() {
+      const c = cutter.getBoundingClientRect();
+      if (nearBenchY(c.top + c.height / 2)) parkNipperAtMouth(parseFloat(cutter.style.top) || 0);
+      checkCutter();
+    },
   }));
 }
 

@@ -435,6 +435,145 @@ button.ok { background: #2d4a2d; }
 }
 
 /* cut / strip */
+.cut-stage .length-read { margin: 2px 8px 0; }
+.cut-bench {
+  position: relative;
+  z-index: 6;
+  display: flex;
+  align-items: stretch;
+  margin: 6px 6px 0;
+  min-height: 92px;
+}
+.cut-stage .cutter.tool { z-index: 4; }
+.cut-stage .cutter.dragging { z-index: 7; }
+.cut-reel {
+  position: relative;
+  flex: 0 0 104px;
+  background: #2a2c22;
+  border: 2px solid #1a1b14;
+  border-right: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+}
+.cut-drum {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  border: 8px solid #d5d0c4;
+  background:
+    repeating-conic-gradient(
+      from var(--spin, 0deg),
+      currentColor 0 14deg,
+      #243528 14deg 18deg
+    );
+  box-shadow: inset 0 0 0 11px currentColor, 0 2px 0 #111;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+.cut-print {
+  font-size: 0.62rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  color: #efe6cf;
+  background: #1a1b14;
+  padding: 1px 4px;
+  border: 1px solid #c9b888;
+  border-radius: 2px;
+  z-index: 1;
+}
+.cut-lead {
+  position: absolute;
+  right: -2px;
+  top: 42px;
+  width: 20px;
+  height: 22px;
+  background: #3f5a3c;
+  border: 2px solid #1a1b14;
+  border-right: 0;
+  z-index: 3;
+}
+.cut-lead.leftover {
+  width: 11px;
+  right: 6px;
+  border-right: 2px solid #1a1b14;
+  background: linear-gradient(90deg, #3f5a3c 58%, #c48a3a 58%);
+}
+.cut-mouth {
+  position: absolute;
+  right: -1px;
+  top: 42px;
+  width: 4px;
+  height: 22px;
+  background: transparent;
+  z-index: 4;
+  pointer-events: none;
+}
+.cut-reel small {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 2px;
+  text-align: center;
+  font-size: 0.6rem;
+  font-weight: 800;
+  color: #c9c2aa;
+  letter-spacing: 0.04em;
+  z-index: 2;
+}
+.cut-stage .measure-track {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  border-left: 0;
+}
+.cut-stage .cable-body {
+  border-radius: 0 4px 4px 0;
+  border-left: 0;
+  min-width: 16px;
+  z-index: 2;
+}
+.cut-stage .cable-body.detached {
+  border-left: 2px solid #1a1b14;
+  border-radius: 0;
+  transition: left 0.28s ease;
+}
+.cable-pull {
+  position: absolute;
+  top: 36px;
+  z-index: 6;
+  min-width: 84px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 8px 0 0;
+  touch-action: none;
+  cursor: grab;
+}
+.cable-pull .free-end {
+  width: 14px;
+  height: 26px;
+  background: #3f5a3c;
+  border: 2px solid #1a1b14;
+  border-left: 0;
+  border-radius: 0 7px 7px 0;
+  flex-shrink: 0;
+}
+.cable-pull span {
+  font-size: 0.68rem;
+  font-weight: 900;
+  color: #f0d48a;
+  background: #1a1b14;
+  border: 1px solid #c9b888;
+  padding: 2px 6px;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
 .measure-track {
   position: relative;
   margin: 8px 10px 0;
