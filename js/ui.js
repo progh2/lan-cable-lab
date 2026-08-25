@@ -4,11 +4,14 @@ export function qs(sel, root = document) {
   return root.querySelector(sel);
 }
 
-export function wireStyle(id) {
+export function wireStyle(id, vertical = false) {
   const w = WIRES[id];
   if (!w) return "";
   if (w.stripe) {
-    return `background:repeating-linear-gradient(90deg,${w.hex} 0 7px,${w.stripe} 7px 10px);color:#1a1610`;
+    const grad = vertical
+      ? `repeating-linear-gradient(180deg,${w.hex} 0 10px,${w.stripe} 10px 16px)`
+      : `repeating-linear-gradient(90deg,${w.hex} 0 7px,${w.stripe} 7px 10px)`;
+    return `background:${grad};color:#1a1610`;
   }
   return `background:${w.hex};color:${luma(w.hex) > 150 ? "#1a1610" : "#f4efe4"}`;
 }

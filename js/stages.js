@@ -541,9 +541,10 @@ function sort(root, api, add) {
       const slot = el(`<div class="slot ${id ? "filled" : ""}" data-i="${i}"><span class="num">${i + 1}</span></div>`);
       if (id) {
         const w = WIRES[id];
-        const chip = el(`<span class="wire-chip" data-id="${id}" style="${wireStyle(id)}">${w.name}</span>`);
-        slot.appendChild(chip);
-        bindWire(chip, id);
+        slot.setAttribute("style", wireStyle(id, true));
+        const shaft = el(`<span class="slot-wire" data-id="${id}" style="${wireStyle(id, true)}">${w.name}</span>`);
+        slot.appendChild(shaft);
+        bindWire(shaft, id);
       }
       slotsEl.appendChild(slot);
     });
