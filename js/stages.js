@@ -275,33 +275,112 @@ const STAGES = {
   welcome, reel, cut, strip, untwist, sort, boot, insert, inspect, crimp, complete,
 };
 
+const STAMP_SVG = `
+  <svg class="stamp-svg" viewBox="0 0 88 128" aria-hidden="true">
+    <ellipse cx="44" cy="15" rx="16" ry="9" fill="#6b3e18" stroke="#1a1b14" stroke-width="2"/>
+    <path d="M28 15c0 7 7 11 16 11s16-4 16-11" fill="#8a5324"/>
+    <path d="M32 14 L32 58 L56 58 L56 14 Z" fill="#a86b32" stroke="#1a1b14" stroke-width="2"/>
+    <path d="M36 20 L36 54" stroke="#c4894a" stroke-width="1.6" opacity=".55"/>
+    <path d="M42 18 L42 56" stroke="#6b3e18" stroke-width="1.1" opacity=".35"/>
+    <path d="M50 22 L50 52" stroke="#d4a05a" stroke-width="1.3" opacity=".4"/>
+    <path d="M20 56 L68 56 L74 70 L14 70 Z" fill="#7a4a1e" stroke="#1a1b14" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M24 59 L64 59 L67 66 L21 66 Z" fill="#c4894a" opacity=".32"/>
+    <path d="M14 70 L74 70 L76 94 L12 94 Z" fill="#9c1f1f" stroke="#1a1b14" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M18 74 L70 74 L71 82 L17 82 Z" fill="#c43a3a" opacity=".4"/>
+    <text x="44" y="89" text-anchor="middle" fill="#f6d4cc" font-size="13" font-weight="800" letter-spacing="1">접수</text>
+    <ellipse cx="44" cy="97" rx="32" ry="8" fill="#6e1212" stroke="#1a1b14" stroke-width="2"/>
+    <ellipse cx="44" cy="96" rx="26" ry="4.5" fill="#4a0c0c" opacity=".55"/>
+  </svg>`;
+
 function welcome(root, api, add) {
+  const pins = T568B.map((id, i) => {
+    const w = WIRES[id];
+    return `<li><i class="pin-dot" style="${wireStyle(id)}"></i>${i + 1} ${w.short}</li>`;
+  }).join("");
   const box = el(`
-    <div class="stage-canvas">
-      <div class="welcome-card">
-        <h2>오늘 의뢰</h2>
-        <ul>
-          <li>규격 Cat5e — 다른 릴은 반려</li>
-          <li>길이 1.00m (±5cm)</li>
-          <li>양끝 T568B 스트레이트</li>
-          <li>관통형 RJ45 — 탈피 약 3cm, 앞에서 색 확인</li>
-          <li>부트는 플러그보다 먼저, 양쪽 모두</li>
-        </ul>
-        <div class="accept-box" id="accept">접수 도장을 여기로</div>
+    <div class="stage-canvas welcome-desk">
+      <article class="job-slip" id="slip" aria-label="오늘 의뢰 쪽지">
+        <i class="slip-fold" aria-hidden="true"></i>
+        <p class="slip-kicker">오늘 의뢰</p>
+        <p class="slip-job">Cat5e 1m 스트레이트 · 양끝 T568B · 관통형 · 부트 필수</p>
+        <ol class="slip-t568b">${pins}</ol>
+        <div class="intake-ink" id="intake-ink" aria-hidden="true">접수</div>
+      </article>
+      <div class="rubber-stamp" id="ink" role="button" tabindex="0" aria-label="접수 도장. 집어 쪽지에 찍으시오.">
+        ${STAMP_SVG}
+        <span class="tool-label">접수 도장</span>
       </div>
-      <div class="stamp-drag" id="ink">접수</div>
     </div>
   `);
   root.appendChild(box);
-  const ink = qs("#ink", box);
-  const accept = qs("#accept", box);
-  add(bindDrag(ink, {
+  const stampEl = qs("#ink", box);
+  const slip = qs("#slip", box);
+  const inkMark = qs("#intake-ink", box);
+  let stamped = false;
+  let goTimer = 0;
+  add(() => clearTimeout(goTimer));
+
+  function parkStamp() {
+    const br = box.getBoundingClientRect();
+    const er = stampEl.getBoundingClientRect();
+    place(stampEl, er.left - br.left, er.top - br.top);
+    stampEl.style.right = "auto";
+    stampEl.style.bottom = "auto";
+  }
+  requestAnimationFrame(parkStamp);
+
+  function stampTheSlip() {
+    if (stamped) return;
+    stamped = true;
+    stampEl.classList.remove("lifted");
+    const over = hits(stampEl, slip, 0.08) || centerDist(stampEl, slip) < 130;
+    if (!over) {
+      stampEl.classList.add("flying");
+      const br = box.getBoundingClientRect();
+      const sr = slip.getBoundingClientRect();
+      const x = sr.left - br.left + sr.width * 0.5 - stampEl.offsetWidth * 0.28;
+      const y = sr.top - br.top + sr.height * 0.18;
+      place(stampEl, x, y);
+    }
+    stampEl.classList.add("stamping");
+    stampEl.setAttribute("aria-disabled", "true");
+    inkMark.classList.add("on");
+    goTimer = setTimeout(() => api.go("reel"), 780);
+  }
+
+  add(bindDrag(stampEl, {
     container: box,
-    onMove(x, y) { place(ink, x, y); },
-    onEnd() {
-      if (hits(ink, accept, 0.22)) api.go("reel");
+    onStart() {
+      if (stamped) return;
+      stampEl.classList.add("lifted");
+    },
+    onMove(x, y) {
+      if (stamped) return;
+      place(stampEl, ...clampTool(stampEl, x, y, box));
+    },
+    onEnd(_ev, meta) {
+      if (stamped) return;
+      stampEl.classList.remove("lifted");
+      if (!meta.moved) {
+        stampTheSlip();
+        return;
+      }
+      if (hits(stampEl, slip, 0.1) || centerDist(stampEl, slip) < 140) {
+        stampTheSlip();
+      } else {
+        api.toast("쪽지 위에 도장을 찍으시오.");
+      }
     },
   }));
+
+  const onKey = (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      stampTheSlip();
+    }
+  };
+  stampEl.addEventListener("keydown", onKey);
+  add(() => stampEl.removeEventListener("keydown", onKey));
 }
 
 function reel(root, api, add) {
