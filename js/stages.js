@@ -317,8 +317,13 @@ function welcome(root, api, add) {
   const slip = qs("#slip", box);
   const inkMark = qs("#intake-ink", box);
   let stamped = false;
-  let goTimer = 0;
-  add(() => clearTimeout(goTimer));
+  const timers = [];
+  const later = (fn, ms) => {
+    const id = setTimeout(fn, ms);
+    timers.push(id);
+    return id;
+  };
+  add(() => timers.forEach(clearTimeout));
 
   function parkStamp() {
     const br = box.getBoundingClientRect();
@@ -329,23 +334,34 @@ function welcome(root, api, add) {
   }
   requestAnimationFrame(parkStamp);
 
+  function slipPoint(fx, fy) {
+    const br = box.getBoundingClientRect();
+    const sr = slip.getBoundingClientRect();
+    return [
+      sr.left - br.left + sr.width * fx - stampEl.offsetWidth * 0.35,
+      sr.top - br.top + sr.height * fy - 8,
+    ];
+  }
+
   function stampTheSlip() {
     if (stamped) return;
     stamped = true;
     stampEl.classList.remove("lifted");
-    const over = hits(stampEl, slip, 0.08) || centerDist(stampEl, slip) < 130;
-    if (!over) {
-      stampEl.classList.add("flying");
-      const br = box.getBoundingClientRect();
-      const sr = slip.getBoundingClientRect();
-      const x = sr.left - br.left + sr.width * 0.5 - stampEl.offsetWidth * 0.28;
-      const y = sr.top - br.top + sr.height * 0.18;
-      place(stampEl, x, y);
-    }
-    stampEl.classList.add("stamping");
+    stampEl.classList.add("flying");
     stampEl.setAttribute("aria-disabled", "true");
-    inkMark.classList.add("on");
-    goTimer = setTimeout(() => api.go("reel"), 780);
+    place(stampEl, ...slipPoint(0.62, 0.22));
+    stampEl.classList.add("stamping");
+    later(() => {
+      inkMark.classList.add("on");
+      slip.classList.add("inked");
+    }, 180);
+    later(() => {
+      stampEl.classList.remove("stamping");
+      stampEl.classList.add("spent");
+      const [x, y] = slipPoint(1.08, -0.02);
+      place(stampEl, clamp(x, 0, Math.max(0, box.clientWidth - stampEl.offsetWidth)), clamp(y, 0, Math.max(0, box.clientHeight - stampEl.offsetHeight)));
+    }, 480);
+    later(() => api.go("reel"), 1680);
   }
 
   add(bindDrag(stampEl, {
