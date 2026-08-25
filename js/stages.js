@@ -87,6 +87,158 @@ function ticks(host, items) {
   ).join("");
 }
 
+function slotIds(end) {
+  return end.slots.map((id) => (id && WIRES[id] ? id : "wo"));
+}
+
+function strandBars(ids, cls = "utp-strand") {
+  return ids.map((id) => `<i class="${cls}" style="${wireStyle(id)}"></i>`).join("");
+}
+
+/** Rubber RJ45 boot, side view: tapered, hollow opening on the LEFT. */
+function bootSvg() {
+  return `
+    <svg class="part-svg" viewBox="0 0 120 58" aria-hidden="true">
+      <path d="M22 16 C16 16 11 20 11 29 C11 38 16 42 22 42 L86 46 C100 47 110 44 114 40 L114 18 C110 14 100 11 86 12 Z" fill="#1c3d1c" fill-opacity=".82" stroke="#0c160c" stroke-width="2.2" stroke-linejoin="round"/>
+      <path d="M26 18 L84 15 C96 14 106 17 110 20 L110 26 C104 22 94 20 82 21 L28 24 Z" fill="#3d6a3d" opacity=".42"/>
+      <path d="M40 15 L38 43" stroke="#2a522a" stroke-width="3.2" opacity=".5"/>
+      <path d="M54 14 L52 44" stroke="#2a522a" stroke-width="3.2" opacity=".42"/>
+      <path d="M68 14 L66 45" stroke="#2a522a" stroke-width="3.2" opacity=".36"/>
+      <ellipse cx="18" cy="29" rx="10" ry="15" fill="#143014" stroke="#0c160c" stroke-width="2.2"/>
+      <ellipse cx="16" cy="29" rx="6.6" ry="11" fill="#060a06"/>
+      <ellipse cx="17.4" cy="29" rx="3.1" ry="6" fill="#243824"/>
+      <path d="M112 17 L118 14 L118 44 L112 41 Z" fill="#244a24" stroke="#0c160c" stroke-width="1.8"/>
+    </svg>`;
+}
+
+/** Pass-through RJ45, side view: clear body, gold contacts, opening on the LEFT. */
+function plugSvg() {
+  return `
+    <svg class="part-svg" viewBox="0 0 168 78" aria-hidden="true">
+      <path d="M72 6 L122 6 L128 16 L66 16 Z" fill="#c5d2cc" stroke="#1a1b14" stroke-width="1.8"/>
+      <path d="M86 8 H116" stroke="#8a9690" stroke-width="2"/>
+      <g fill="#d4b12a" stroke="#6a5810" stroke-width=".7">
+        <rect x="76" y="16" width="5.6" height="11" rx=".6"/>
+        <rect x="83" y="16" width="5.6" height="11" rx=".6"/>
+        <rect x="90" y="16" width="5.6" height="11" rx=".6"/>
+        <rect x="97" y="16" width="5.6" height="11" rx=".6"/>
+        <rect x="104" y="16" width="5.6" height="11" rx=".6"/>
+        <rect x="111" y="16" width="5.6" height="11" rx=".6"/>
+        <rect x="118" y="16" width="5.6" height="11" rx=".6"/>
+        <rect x="125" y="16" width="5.6" height="11" rx=".6"/>
+      </g>
+      <path d="M24 20 L138 20 L156 24 L156 62 L138 66 L24 66 C12 66 6 58 6 43 C6 28 12 20 24 20 Z" fill="#d8e8e2" fill-opacity=".58" stroke="#1a1b14" stroke-width="2.1"/>
+      <g stroke="#1a1b14" stroke-opacity=".16" stroke-width="1">
+        <path d="M28 28 H136"/><path d="M28 33 H136"/><path d="M28 38 H136"/><path d="M28 43 H136"/>
+        <path d="M28 48 H136"/><path d="M28 53 H136"/><path d="M28 58 H136"/>
+      </g>
+      <ellipse cx="16" cy="43" rx="11" ry="20" fill="#2a3330" stroke="#1a1b14" stroke-width="1.8"/>
+      <ellipse cx="14" cy="43" rx="7" ry="14" fill="#121816"/>
+      <ellipse cx="16" cy="43" rx="3.4" ry="7" fill="#3a4440"/>
+      <path d="M138 20 L156 24 L156 62 L138 66 Z" fill="#c9d6d0" fill-opacity=".88" stroke="#1a1b14" stroke-width="1.6"/>
+      <g fill="#1a1b14">
+        <rect x="144" y="28" width="7" height="2.2" rx=".4"/>
+        <rect x="144" y="32.4" width="7" height="2.2" rx=".4"/>
+        <rect x="144" y="36.8" width="7" height="2.2" rx=".4"/>
+        <rect x="144" y="41.2" width="7" height="2.2" rx=".4"/>
+        <rect x="144" y="45.6" width="7" height="2.2" rx=".4"/>
+        <rect x="144" y="50" width="7" height="2.2" rx=".4"/>
+        <rect x="144" y="54.4" width="7" height="2.2" rx=".4"/>
+        <rect x="144" y="58.8" width="7" height="2.2" rx=".4"/>
+      </g>
+    </svg>`;
+}
+
+function utpRunMarkup(end, { bootOn = false } = {}) {
+  const ids = slotIds(end);
+  return `
+    <div class="utp-run" id="cable" role="img" aria-label="UTP 케이블, 정렬된 8가닥">
+      <div class="utp-jacket"><span class="jacket-etch">CAT5E</span></div>
+      ${bootOn ? `<div class="rj45-boot on-cable" aria-hidden="true">${bootSvg()}</div>` : ""}
+      <div class="utp-tip">${strandBars(ids)}</div>
+    </div>`;
+}
+
+function bootPartMarkup(ids) {
+  return `
+    <div class="rj45-boot" id="boot" role="img" aria-label="고무 부트, 왼쪽 구멍">
+      ${bootSvg()}
+      <div class="boot-lanes" id="boot-lanes">${strandBars(ids, "plug-strand")}</div>
+    </div>`;
+}
+
+function plugPartMarkup(ids, { emerge = false, id = "plug" } = {}) {
+  const shown = emerge ? " on" : "";
+  const laneW = emerge ? ' style="width:72%"' : "";
+  return `
+    <div class="rj45-plug" id="${id}" role="img" aria-label="관통형 RJ45, 왼쪽 입구">
+      ${plugSvg()}
+      <div class="plug-lanes${shown}" id="lanes"${laneW}>${strandBars(ids, "plug-strand")}</div>
+      <div class="plug-emerge${shown}" id="emerge">${strandBars(ids, "emerge-strand")}</div>
+    </div>`;
+}
+
+const INSERT_REASON = {
+  "from-right": "오른쪽에서는 안 들어갑니다.",
+  skew: "왼쪽 구멍 높이를 맞추세요.",
+  "wrong-end": "가닥 끝(오른쪽)으로 끼우세요.",
+};
+
+function overlapArea(a, b) {
+  const ix = Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left));
+  const iy = Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
+  return ix * iy;
+}
+
+/** Pure geometry: tip must enter the part's left hollow; jacket stays on the left. */
+export function verdictFromRects(tip, jacket, part, cable) {
+  const overlapAll = overlapArea(cable, part);
+  const overlapTip = overlapArea(tip, part);
+  const tipMidX = tip.left + tip.width / 2;
+  const partMidX = part.left + part.width / 2;
+  const iyTip = Math.max(0, Math.min(tip.bottom, part.bottom) - Math.max(tip.top, part.top));
+  const close = overlapAll > 80 || overlapTip > 30
+    || Math.hypot(tipMidX - partMidX, (tip.top + tip.height / 2) - (part.top + part.height / 2)) < 88;
+  if (!close) return "idle";
+
+  const vRatio = iyTip / Math.max(1, Math.min(tip.height, part.height));
+  if (jacket.left > part.left + part.width * 0.15) return "from-right";
+  const tipHorizNear = tip.right > part.left - 20 && tip.left < part.right;
+  if (vRatio < 0.2 && overlapAll > 50 && tipHorizNear) return "skew";
+  if (overlapAll > 80 && overlapTip < 25) return "wrong-end";
+  if (overlapTip > 40 && tip.right > part.left + 8 && jacket.left < part.left + part.width * 0.3 && vRatio >= 0.2) {
+    return "ok";
+  }
+  return "idle";
+}
+
+/** Cable may enter a boot/plug only from the part's left (hollow) side. */
+function leftInsertVerdict(cable, part) {
+  const tip = qs(".utp-tip", cable) || cable;
+  const jacket = qs(".utp-jacket", cable) || cable;
+  return verdictFromRects(
+    tip.getBoundingClientRect(),
+    jacket.getBoundingClientRect(),
+    part.getBoundingClientRect(),
+    cable.getBoundingClientRect(),
+  );
+}
+
+function bounceReject(el, x, y, api, reason) {
+  place(el, x, y);
+  el.classList.remove("reject-bounce");
+  requestAnimationFrame(() => el.classList.add("reject-bounce"));
+  el.addEventListener("animationend", () => el.classList.remove("reject-bounce"), { once: true });
+  api.toast(reason);
+}
+
+function clampPart(node, x, y, box) {
+  return [
+    clamp(x, -40, Math.max(0, box.clientWidth - 48)),
+    clamp(y, 0, Math.max(0, box.clientHeight - node.offsetHeight)),
+  ];
+}
+
 function showJacket(reel) {
   const sheet = qs("#inspect-sheet");
   const faded = !reel.print;
@@ -630,9 +782,9 @@ function boot(root, api, add) {
   const box = el(`
     <div class="stage-canvas">
       <div class="work-row" id="row">
-        <div class="cable-horiz" id="cable"></div>
-        <div class="plug-ghost">플러그는 부트 후</div>
-        <div class="boot" id="boot">부트</div>
+        <p class="insert-hint">← 왼쪽 구멍으로</p>
+        ${utpRunMarkup(end)}
+        ${bootPartMarkup(slotIds(end))}
       </div>
     </div>
   `);
@@ -640,19 +792,82 @@ function boot(root, api, add) {
   const row = qs("#row", box);
   const cable = qs("#cable", box);
   const bootEl = qs("#boot", box);
-  requestAnimationFrame(() => place(bootEl, row.clientWidth - 100, 24));
+  const bootLanes = qs("#boot-lanes", box);
+  let cableHome = [8, 40];
+  let bootHome = [200, 40];
+  let seated = false;
+
+  function homes() {
+    const h = row.clientHeight;
+    const w = row.clientWidth;
+    cableHome = [8, Math.max(10, h * 0.36)];
+    bootHome = [Math.max(200, Math.min(w * 0.56, w - bootEl.offsetWidth - 90)), Math.max(10, h * 0.34)];
+  }
+  function paintBootLanes(t) {
+    const pct = Math.max(0, Math.min(1, t));
+    bootLanes.style.width = `${pct * 70}%`;
+    bootLanes.classList.toggle("on", pct > 0.1);
+  }
+  function bootDepth() {
+    const C = cable.getBoundingClientRect();
+    const P = bootEl.getBoundingClientRect();
+    if (C.left + C.width / 2 >= P.left + P.width / 2) return 0;
+    return Math.max(0, Math.min(1, (C.right - P.left) / (P.width * 0.9)));
+  }
+  function snapBootOn() {
+    seated = true;
+    end.bootOn = true;
+    bootEl.classList.add("seated");
+    const cr = cable.getBoundingClientRect();
+    const jr = qs(".utp-jacket", cable).getBoundingClientRect();
+    const rr = row.getBoundingClientRect();
+    place(bootEl, jr.right - rr.left - 80, cr.top - rr.top + (cr.height - bootEl.offsetHeight) / 2);
+    paintBootLanes(1);
+    api.primary("플러그 삽입", () => api.go("insert"));
+  }
+  function trySeat(moved) {
+    const v = leftInsertVerdict(cable, bootEl);
+    if (v === "ok") {
+      snapBootOn();
+      return;
+    }
+    if (INSERT_REASON[v]) {
+      const home = moved === bootEl ? bootHome : cableHome;
+      bounceReject(moved, home[0], home[1], api, INSERT_REASON[v]);
+      paintBootLanes(0);
+      api.primary(null);
+    }
+  }
+
+  requestAnimationFrame(() => {
+    homes();
+    place(cable, ...cableHome);
+    place(bootEl, ...bootHome);
+  });
+
+  add(bindDrag(cable, {
+    container: row,
+    onMove(x, y) {
+      place(cable, ...clampPart(cable, x, y, row));
+      if (seated) snapBootOn();
+      else paintBootLanes(leftInsertVerdict(cable, bootEl) === "from-right" ? 0 : bootDepth());
+    },
+    onEnd() {
+      if (!seated) trySeat(cable);
+    },
+  }));
   add(bindDrag(bootEl, {
     container: row,
     onMove(x, y) {
-      place(bootEl, clamp(x, 0, row.clientWidth - 84), clamp(y, 0, row.clientHeight - 48));
+      if (seated) {
+        snapBootOn();
+        return;
+      }
+      place(bootEl, ...clampPart(bootEl, x, y, row));
+      paintBootLanes(leftInsertVerdict(cable, bootEl) === "from-right" ? 0 : bootDepth());
     },
     onEnd() {
-      if (hits(bootEl, cable, 0.04) || centerDist(bootEl, cable) < 150) {
-        end.bootOn = true;
-        bootEl.style.left = `${cable.offsetLeft + cable.offsetWidth - 36}px`;
-        bootEl.style.top = `${cable.offsetTop - 8}px`;
-        api.primary("플러그 삽입", () => api.go("insert"));
-      }
+      if (!seated) trySeat(bootEl);
     },
   }));
 }
@@ -663,72 +878,166 @@ function insert(root, api, add) {
     api.go("boot");
     return;
   }
-  const colors = end.slots.map((id) => WIRES[id] || WIRES.wo);
+  const ids = slotIds(end);
   const box = el(`
     <div class="stage-canvas">
       <div class="work-row" id="row">
-        <div class="pt-plug" id="plug">
-          <div style="padding:6px 8px;font-size:0.72rem;font-weight:800">관통형 전면</div>
-          <div class="holes" id="holes">${colors.map(() => "<b></b>").join("")}</div>
-          <div class="emerge" id="emerge"></div>
-        </div>
-        <div class="bundle" id="bundle">${colors.map((w) => `<i style="${wireStyle(w.id)}"></i>`).join("")}</div>
+        <p class="insert-hint">← 왼쪽 구멍으로</p>
+        ${utpRunMarkup(end, { bootOn: true })}
+        ${plugPartMarkup(ids)}
       </div>
     </div>
   `);
   root.appendChild(box);
   const row = qs("#row", box);
+  const cable = qs("#cable", box);
   const plug = qs("#plug", box);
-  const bundle = qs("#bundle", box);
+  const lanes = qs("#lanes", box);
   const emerge = qs("#emerge", box);
-  const holes = qs("#holes", box);
+  let cableHome = [8, 40];
+  let plugHome = [240, 36];
 
-  requestAnimationFrame(() => place(bundle, 10, row.clientHeight * 0.42));
-
-  function showEmerge(on) {
-    emerge.innerHTML = on
-      ? colors.map((w) => `<i style="${wireStyle(w.id)}"></i>`).join("")
-      : "";
-    [...holes.children].forEach((h, i) => {
-      h.classList.toggle("on", on);
-      if (on) h.style.background = colors[i].stripe || colors[i].hex;
-    });
+  function homes() {
+    const h = row.clientHeight;
+    const w = row.clientWidth;
+    cableHome = [8, Math.max(10, h * 0.36)];
+    plugHome = [Math.max(240, Math.min(w * 0.58, w - plug.offsetWidth - 90)), Math.max(8, h * 0.28)];
+  }
+  function paintThrough(t) {
+    const pct = Math.max(0, Math.min(1, t));
+    lanes.style.width = `${pct * 72}%`;
+    lanes.classList.toggle("on", pct > 0.08);
+    const out = Math.max(0, (pct - 0.55) / 0.45);
+    emerge.style.width = `${out * 28}px`;
+    emerge.classList.toggle("on", out > 0.15);
+  }
+  function depthT() {
+    const C = cable.getBoundingClientRect();
+    const P = plug.getBoundingClientRect();
+    if (C.left + C.width / 2 >= P.left + P.width / 2) return 0;
+    return Math.max(0, Math.min(1, (C.right - P.left) / (P.width * 0.85)));
+  }
+  function snapIn() {
+    const pr = plug.getBoundingClientRect();
+    const rr = row.getBoundingClientRect();
+    const y = pr.top - rr.top + (pr.height - cable.offsetHeight) / 2;
+    place(cable, pr.left - rr.left - cable.offsetWidth + 48, clamp(y, 0, row.clientHeight - cable.offsetHeight));
+    paintThrough(1);
+    end.inserted = true;
+    api.primary("출구 확인", () => api.go("inspect"));
+  }
+  function trySeat(moved) {
+    const v = leftInsertVerdict(cable, plug);
+    if (v === "ok") {
+      snapIn();
+      return;
+    }
+    if (INSERT_REASON[v]) {
+      end.inserted = false;
+      const home = moved === plug ? plugHome : cableHome;
+      bounceReject(moved, home[0], home[1], api, INSERT_REASON[v]);
+      paintThrough(0);
+      api.primary(null);
+      return;
+    }
+    end.inserted = false;
+    paintThrough(0);
+    api.primary(null);
   }
 
-  function seated() {
-    return hits(bundle, plug, 0.04) || centerDist(bundle, plug) < 140;
-  }
-  add(bindDrag(bundle, {
+  requestAnimationFrame(() => {
+    homes();
+    place(cable, ...cableHome);
+    place(plug, ...plugHome);
+    paintThrough(0);
+  });
+
+  add(bindDrag(cable, {
     container: row,
     onMove(x, y) {
-      place(bundle, clamp(x, 0, row.clientWidth - 80), clamp(y, 0, row.clientHeight - 36));
-      showEmerge(seated());
+      place(cable, ...clampPart(cable, x, y, row));
+      const v = leftInsertVerdict(cable, plug);
+      paintThrough(v === "from-right" ? 0 : depthT());
+    },
+    onEnd() { trySeat(cable); },
+  }));
+  add(bindDrag(plug, {
+    container: row,
+    onMove(x, y) {
+      place(plug, ...clampPart(plug, x, y, row));
+      const v = leftInsertVerdict(cable, plug);
+      paintThrough(v === "from-right" ? 0 : depthT());
     },
     onEnd() {
-      if (seated()) {
-        end.inserted = true;
-        const pr = plug.getBoundingClientRect();
-        const rr = row.getBoundingClientRect();
-        place(bundle, pr.left - rr.left - 70, pr.top - rr.top + 16);
-        showEmerge(true);
-        api.primary("출구 확인", () => api.go("inspect"));
-      } else {
-        showEmerge(false);
-        api.primary(null);
+      if (leftInsertVerdict(cable, plug) === "idle") {
+        plugHome = [
+          parseFloat(plug.style.left) || plugHome[0],
+          parseFloat(plug.style.top) || plugHome[1],
+        ];
       }
+      trySeat(plug);
     },
   }));
 }
 
+/** Front-on pass-through RJ45: latch down, pin 1 left, wires exit the face. */
+function inspectFaceSvg() {
+  return `
+    <svg class="inspect-plug-svg" viewBox="0 0 400 250" aria-hidden="true">
+      <path d="M48 22 H336 L360 46 V132 L336 148 H48 L24 132 V46 Z" fill="#cfdcd6" stroke="#1a1b14" stroke-width="2.6" stroke-linejoin="round"/>
+      <path d="M48 22 H336 L352 36 H32 Z" fill="#e4eeea" stroke="#1a1b14" stroke-width="1.5"/>
+      <path d="M360 46 V132 L336 148 V36 Z" fill="#9aada6" stroke="#1a1b14" stroke-width="1.5"/>
+      <path d="M40 50 H360 V78 H40 Z" fill="#2a3330" stroke="#1a1b14" stroke-width="1.7"/>
+      <g fill="#d4b12a" stroke="#6a5810" stroke-width=".85">
+        <rect x="52" y="52" width="30" height="24" rx="1"/>
+        <rect x="90" y="52" width="30" height="24" rx="1"/>
+        <rect x="128" y="52" width="30" height="24" rx="1"/>
+        <rect x="166" y="52" width="30" height="24" rx="1"/>
+        <rect x="204" y="52" width="30" height="24" rx="1"/>
+        <rect x="242" y="52" width="30" height="24" rx="1"/>
+        <rect x="280" y="52" width="30" height="24" rx="1"/>
+        <rect x="318" y="52" width="30" height="24" rx="1"/>
+      </g>
+      <path d="M48 86 H336 V138 H48 Z" fill="#d8e8e2" fill-opacity=".28"/>
+      <path d="M156 148 L244 148 L262 196 L138 196 Z" fill="#aebbb5" stroke="#1a1b14" stroke-width="2.3" stroke-linejoin="round"/>
+      <path d="M166 156 L234 156 L246 186 L154 186 Z" fill="#7d8b85" stroke="#1a1b14" stroke-width="1.4"/>
+      <path d="M184 166 H216" stroke="#efe6cf" stroke-width="3.2" stroke-linecap="round"/>
+    </svg>`;
+}
+
+function inspectPlugMarkup(ids) {
+  const exits = ids.map((id, i) => {
+    const w = WIRES[id] || WIRES.wo;
+    return `
+      <div class="inspect-exit">
+        <b class="inspect-hole" aria-hidden="true"></b>
+        <i class="inspect-stub" style="${wireStyle(id)}"></i>
+        <span class="inspect-pin">${i + 1}</span>
+        <small>${w.short}</small>
+      </div>`;
+  }).join("");
+  return `
+    <div class="inspect-plug" role="img" aria-label="관통형 RJ45 앞면 출구">
+      <div class="inspect-side" aria-hidden="true">
+        <div class="utp-jacket"><span class="jacket-etch">CAT5E</span></div>
+        <div class="rj45-boot on-cable">${bootSvg()}</div>
+        <div class="inspect-side-plug">${plugSvg()}</div>
+      </div>
+      <div class="inspect-plug-frame">
+        ${inspectFaceSvg()}
+        <div class="inspect-exits">${exits}</div>
+      </div>
+    </div>`;
+}
+
 function inspect(root, api, add) {
   const end = endOf(api.state);
+  const ids = slotIds(end);
   const box = el(`
     <div class="stage-canvas">
-      <div class="face">
-        <div class="magnify">
-          <h3>관통형 앞면 · 출구 여덟 구멍</h3>
-          <div class="holes-row" id="holes"></div>
-        </div>
+      <div class="inspect-stage">
+        <p class="inspect-caption">앞면 · 출구 여덟 구멍 · 핀 1이 왼쪽</p>
+        ${inspectPlugMarkup(ids)}
         <div class="inspect-actions">
           <button type="button" class="danger" id="pull">순서 틀림 · 빼기</button>
           <button type="button" class="ok" id="ok">색이 맞다 · 압착</button>
@@ -737,16 +1046,6 @@ function inspect(root, api, add) {
     </div>
   `);
   root.appendChild(box);
-  const row = qs("#holes", box);
-  end.slots.forEach((id, i) => {
-    const w = WIRES[id];
-    row.appendChild(el(`
-      <div class="hole">
-        <div class="circ" style="${wireStyle(id)}"></div>
-        ${i + 1} ${w.short}<br>${w.name}
-      </div>
-    `));
-  });
   qs("#pull", box).onclick = () => api.pullOut();
   qs("#ok", box).onclick = () => {
     if (isT568B(end.slots)) api.go("crimp");
@@ -760,10 +1059,7 @@ function crimp(root, api, add) {
   const box = el(`
     <div class="stage-canvas">
       <div class="work-row" id="row">
-        <div class="pt-plug" id="plug" style="left:30%;right:auto;top:32%">
-          <div style="padding:6px;font-size:0.75rem;font-weight:800">여분 돌출</div>
-          <div class="emerge" style="right:-10px">${end.slots.map((id) => `<i style="${wireStyle(id)}"></i>`).join("")}</div>
-        </div>
+        ${plugPartMarkup(slotIds(end), { emerge: true })}
         ${toolMarkup("crimper", "크림퍼")}
         <div class="hold-meter hidden" id="meter"><i></i></div>
       </div>
@@ -777,7 +1073,10 @@ function crimp(root, api, add) {
   const bar = qs("i", meter);
   let seated = false;
 
-  requestAnimationFrame(() => place(crimper, Math.max(8, row.clientWidth - crimper.offsetWidth - 8), 12));
+  requestAnimationFrame(() => {
+    place(plug, Math.min(row.clientWidth * 0.28, Math.max(8, row.clientWidth - plug.offsetWidth - 8)), row.clientHeight * 0.28);
+    place(crimper, Math.max(8, row.clientWidth - crimper.offsetWidth - 8), 12);
+  });
 
   function seatCheck() {
     seated = hits(crimper, plug, 0.05) || centerDist(crimper, plug) < 130;

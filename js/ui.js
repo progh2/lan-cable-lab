@@ -80,14 +80,26 @@ function endLabel(end, state, which) {
   return which === "A" ? "작업 중" : "대기";
 }
 
+function miniTip(end) {
+  if (!end.slots.every(Boolean)) return "";
+  return `<div class="mini-tip">${end.slots.map((id) => `<i style="${wireStyle(id)}"></i>`).join("")}</div>`;
+}
+
 function endCap(end, which) {
-  if (end.crimped) {
-    return `<div class="cap plug ${which === "A" ? "left" : "right"}">
+  const side = which === "A" ? "left" : "right";
+  if (end.crimped || end.inserted) {
+    return `<div class="cap plug ${side}">
       <div class="boot-bit"></div>
       <div class="rj45"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
     </div>`;
   }
-  return `<div class="cap bare ${which === "A" ? "left" : "right"}"><div class="copper"></div></div>`;
+  if (end.bootOn && end.slots.every(Boolean)) {
+    return `<div class="cap prepared ${side}"><div class="boot-bit"></div>${miniTip(end)}</div>`;
+  }
+  if (end.slots.every(Boolean)) {
+    return `<div class="cap prepared ${side}">${miniTip(end)}</div>`;
+  }
+  return `<div class="cap bare ${side}"><div class="copper"></div></div>`;
 }
 
 export function setPrompt(text) {
