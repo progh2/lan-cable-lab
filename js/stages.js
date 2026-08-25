@@ -5,7 +5,7 @@ import {
 import {
   bindDrag, bindHold, bindPickDrag, place, clamp, hits, centerDist,
 } from "./drag.js";
-import { qs, wireStyle } from "./ui.js";
+import { qs, wireStyle, setPrompt } from "./ui.js";
 
 function el(html) {
   const d = document.createElement("div");
@@ -641,10 +641,18 @@ function strip(root, api, add) {
   }));
 }
 
+/** Bouquet order: adjacent pairs, stripped end up. Index into T568B / end.wires. */
+const FAN = ["wo", "o", "wg", "g", "blu", "wblu", "wbr", "br"];
+const STRAIGHT_NEED = FAN.map((_, i) => 4 + (i % 3));
+const STRAIGHT_MIN_PX = 64;
+const VB_W = 220;
+const VB_H = 340;
+
 function untwist(root, api, add) {
   const end = endOf(api.state);
   const wrap = el(`<div class="stage-canvas" id="box"></div>`);
   root.appendChild(wrap);
+  let bouquetOn = false;
 
   function paint() {
     api.primary(null);
@@ -668,27 +676,229 @@ function untwist(root, api, add) {
       });
       return;
     }
-    wrap.innerHTML = `<div class="straights" id="straights"></div>`;
-    const host = qs("#straights", wrap);
-    T568B.forEach((id, i) => {
-      const w = WIRES[id];
-      const card = el(`
-        <div class="straight-wire ${end.wires[i] ? "done" : ""}" data-i="${i}">
-          <i class="strand" style="${wireStyle(id)}"></i>
-          <span>${w.name}${end.wires[i] ? " · 펴짐" : " · 잡아 펴기"}</span>
-        </div>
-      `);
-      host.appendChild(card);
-      if (!end.wires[i]) bindFlick(card, () => {
-        end.wires[i] = true;
-        paint();
-      }, add, api, 36);
-    });
-    if (allWiresStraight(end)) {
-      api.primary("색 정렬로", () => api.go("sort"));
-    }
+    mountBouquet();
   }
+
+  function mountBouquet() {
+    if (bouquetOn) {
+      offerSort();
+      return;
+    }
+    bouquetOn = true;
+    const strokes = FAN.map((id, fanI) => (end.wires[T568B.indexOf(id)] ? STRAIGHT_NEED[fanI] : 0));
+    wrap.innerHTML = `
+      <div class="straight-lab">
+        <p class="straight-hint">한 가닥씩 여러 번 문질러 당겨 펴세요.</p>
+        <div class="bouquet" role="img" aria-label="세로로 세운 랜선. 아래는 재킷, 위는 가닥 여덟 줄.">
+          <svg viewBox="0 0 ${VB_W} ${VB_H}" preserveAspectRatio="xMidYMax meet">
+            <rect class="bouquet-pad" x="0" y="0" width="${VB_W}" height="${VB_H}"/>
+            ${jacketBodySvg()}
+            <g id="fan-wires">${FAN.map((id, fanI) => `
+              <g class="strand-g" data-fan="${fanI}" data-id="${id}">
+                <path class="strand-hit"/>
+                <path class="strand-outline"/>
+                <path class="strand-body"/>
+                <path class="strand-stripe"/>
+                <circle class="strand-tip" r="2.6"/>
+              </g>`).join("")}</g>
+            ${jacketRimSvg()}
+          </svg>
+        </div>
+      </div>
+    `;
+    setPrompt("한 가닥씩 여러 번 문질러 당겨 펴세요.");
+    const svg = qs("svg", wrap);
+    const host = qs("#fan-wires", wrap);
+    FAN.forEach((_, fanI) => paintStrand(fanI, strokes[fanI]));
+
+    function paintStrand(fanI, count) {
+      const id = FAN[fanI];
+      const w = WIRES[id];
+      const g = host.children[fanI];
+      const pts = strandPoints(fanI, Math.min(1, count / STRAIGHT_NEED[fanI]));
+      const d = pathFrom(pts);
+      const tip = pts[pts.length - 1];
+      qs(".strand-hit", g).setAttribute("d", d);
+      qs(".strand-outline", g).setAttribute("d", d);
+      const body = qs(".strand-body", g);
+      body.setAttribute("d", d);
+      body.setAttribute("stroke", w.hex);
+      const stripe = qs(".strand-stripe", g);
+      if (w.stripe) {
+        stripe.setAttribute("d", d);
+        stripe.setAttribute("stroke", w.stripe);
+        stripe.setAttribute("stroke-dasharray", "5.5 3.2");
+        stripe.classList.remove("hidden");
+      } else {
+        stripe.classList.add("hidden");
+      }
+      const tipEl = qs(".strand-tip", g);
+      tipEl.setAttribute("cx", tip[0].toFixed(2));
+      tipEl.setAttribute("cy", tip[1].toFixed(2));
+      const done = count >= STRAIGHT_NEED[fanI];
+      g.classList.toggle("done", done);
+      g.setAttribute("aria-label", `${w.name}${done ? " 펴짐" : ""}`);
+    }
+    function offerSort() {
+      if (allWiresStraight(end)) api.primary("색 정렬로", () => api.go("sort"));
+      else api.primary(null);
+    }
+
+    let live = null;
+    function toSvg(ev) {
+      const ctm = svg.getScreenCTM();
+      if (!ctm) return { x: 0, y: 0 };
+      return new DOMPoint(ev.clientX, ev.clientY).matrixTransform(ctm.inverse());
+    }
+    function distTo(fanI, ev) {
+      const path = qs(".strand-hit", host.children[fanI]);
+      const pt = toSvg(ev);
+      const len = path.getTotalLength();
+      let min = Infinity;
+      for (let t = 0; t <= 1; t += 0.04) {
+        const p = path.getPointAtLength(len * t);
+        min = Math.min(min, Math.hypot(p.x - pt.x, p.y - pt.y));
+      }
+      return min;
+    }
+    function pickWire(ev) {
+      let best = null;
+      let bestD = 20;
+      FAN.forEach((_, i) => {
+        if (end.wires[T568B.indexOf(FAN[i])]) return;
+        const d = distTo(i, ev);
+        if (d < bestD) {
+          bestD = d;
+          best = i;
+        }
+      });
+      return best;
+    }
+
+    const down = (ev) => {
+      if (ev.isPrimary === false) return;
+      if (ev.button != null && ev.button !== 0) return;
+      const fanI = pickWire(ev);
+      if (fanI == null) return;
+      if (end.wires[T568B.indexOf(FAN[fanI])]) return;
+      ev.preventDefault();
+      svg.setPointerCapture(ev.pointerId);
+      live = {
+        id: ev.pointerId,
+        fanI,
+        x: ev.clientX,
+        y: ev.clientY,
+        near: 0,
+        along: 0,
+      };
+      host.children[fanI].classList.add("active");
+    };
+    const move = (ev) => {
+      if (!live || ev.pointerId !== live.id) return;
+      ev.preventDefault();
+      const dx = ev.clientX - live.x;
+      const dy = ev.clientY - live.y;
+      const step = Math.hypot(dx, dy);
+      live.x = ev.clientX;
+      live.y = ev.clientY;
+      if (distTo(live.fanI, ev) <= 34) {
+        live.near += step;
+        live.along += Math.abs(dy);
+      }
+    };
+    const up = (ev) => {
+      if (!live || ev.pointerId !== live.id) return;
+      const s = live;
+      live = null;
+      host.children[s.fanI].classList.remove("active");
+      try { svg.releasePointerCapture(ev.pointerId); } catch { /* already */ }
+      const stateI = T568B.indexOf(FAN[s.fanI]);
+      if (end.wires[stateI]) return;
+      if (s.near < 14 && s.along < 14) {
+        api.toast("한 가닥을 여러 번 문질러 당겨 펴세요.");
+        return;
+      }
+      if (s.near < STRAIGHT_MIN_PX || s.along < 44) {
+        api.toast("더 길게 문질러 당겨 주세요.");
+        return;
+      }
+      strokes[s.fanI] += 1;
+      if (strokes[s.fanI] >= STRAIGHT_NEED[s.fanI]) {
+        end.wires[stateI] = true;
+      }
+      paintStrand(s.fanI, strokes[s.fanI]);
+      offerSort();
+    };
+
+    svg.addEventListener("pointerdown", down);
+    svg.addEventListener("pointermove", move);
+    svg.addEventListener("pointerup", up);
+    svg.addEventListener("pointercancel", up);
+    add(() => {
+      svg.removeEventListener("pointerdown", down);
+      svg.removeEventListener("pointermove", move);
+      svg.removeEventListener("pointerup", up);
+      svg.removeEventListener("pointercancel", up);
+    });
+    offerSort();
+  }
+
   paint();
+}
+
+function jacketBodySvg() {
+  return `
+    <g class="jacket-body" aria-hidden="true">
+      <rect x="76" y="254" width="68" height="80" rx="12" fill="#2f462c" stroke="#1a1b14" stroke-width="2.2"/>
+      <rect x="80" y="258" width="60" height="72" rx="10" fill="#3f5a3c"/>
+      <path d="M88 266 v56" stroke="#6a8a62" stroke-width="8" stroke-linecap="round" opacity=".38"/>
+      <path d="M130 270 v48" stroke="#243424" stroke-width="9" stroke-linecap="round" opacity=".28"/>
+    </g>
+  `;
+}
+
+function jacketRimSvg() {
+  return `
+    <g class="jacket-rim" aria-hidden="true">
+      <ellipse cx="110" cy="254" rx="32" ry="10" fill="#4a6a46" stroke="#1a1b14" stroke-width="2"/>
+      <ellipse cx="110" cy="252" rx="20" ry="6.4" fill="#1c1d17"/>
+    </g>
+  `;
+}
+
+function strandPoints(fanI, progress) {
+  const startX = 110 + (fanI - 3.5) * 3.2;
+  const startY = 252;
+  const pair = Math.floor(fanI / 2);
+  const inPair = fanI % 2;
+  const tipX = 20 + pair * 52 + inPair * 20;
+  const tipY = 16;
+  const amp = (1 - progress) * (13 + (fanI % 3) * 2);
+  const n = 12;
+  const pts = [];
+  for (let s = 0; s <= n; s++) {
+    const t = s / n;
+    const x = startX + (tipX - startX) * t;
+    const y = startY + (tipY - startY) * t;
+    const mid = Math.sin(t * Math.PI);
+    const wig = Math.sin((t * 3.35 + fanI * 0.62) * Math.PI) * amp * (0.3 + 0.7 * mid);
+    const wig2 = Math.cos((t * 6.2 + fanI * 1.1) * Math.PI) * amp * 0.26 * t;
+    pts.push([x + wig + wig2, y]);
+  }
+  return pts;
+}
+
+function pathFrom(pts) {
+  if (pts.length < 2) return "";
+  let d = `M${pts[0][0].toFixed(2)},${pts[0][1].toFixed(2)}`;
+  for (let i = 1; i < pts.length - 1; i++) {
+    const xc = (pts[i][0] + pts[i + 1][0]) / 2;
+    const yc = (pts[i][1] + pts[i + 1][1]) / 2;
+    d += ` Q${pts[i][0].toFixed(2)},${pts[i][1].toFixed(2)} ${xc.toFixed(2)},${yc.toFixed(2)}`;
+  }
+  const last = pts[pts.length - 1];
+  d += ` T${last[0].toFixed(2)},${last[1].toFixed(2)}`;
+  return d;
 }
 
 function bindFlick(node, onFlick, add, api, need = 48) {
